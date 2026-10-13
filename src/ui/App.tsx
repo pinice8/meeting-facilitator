@@ -30,13 +30,11 @@ export function App({ store, loadInvite, inMeeting = false, view = "panel", onSh
 
   return (
     <>
-      {live && <AgendaBar store={store} />}
+      {live && <AgendaBar store={store} interactive />}
       <main className="app">
         <header className="app-header">
           <h1>Meeting Facilitator</h1>
-          <span className={`badge ${store.canControl ? "badge-control" : ""}`}>
-            {store.canControl ? "You control the flow" : "View only"}
-          </span>
+          {!store.canControl && <span className="badge">View only</span>}
         </header>
         {store.notice && <p className="notice" role="status">{store.notice}</p>}
         {restart && (

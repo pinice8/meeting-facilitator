@@ -1,4 +1,3 @@
-import { distribute } from "./planner";
 import type { SessionState } from "./types";
 
 export const MINUTE_MS = 60_000;
@@ -118,28 +117,14 @@ export function resetSession(state: SessionState): SessionState {
   return bump(state, { status: "setup", currentIndex: 0, elapsedMs: [], runningSince: null });
 }
 
-/**
- * Redistributes the meeting time that is left after the current item across the remaining
- * items, in proportion to their planned minutes (at least 1 minute each).
- */
-export function rebalance(state: SessionState, now: number): SessionState {
-  if (!isLive(state)) return state;
-  const upcoming = state.items.slice(state.currentIndex + 1);
-  if (upcoming.length === 0) return state;
-
-  const currentLeft = Math.max(0, currentRemainingMs(state, now));
-  const availableMs = state.totalMinutes * MINUTE_MS - totalElapsedMs(state, now) - currentLeft;
-  const availableMinutes = Math.max(0, Math.floor(availableMs / MINUTE_MS));
-
-  const minutes =
-    availableMinutes < upcoming.length
-      ? upcoming.map(() => 1)
-      : distribute(availableMinutes - upcoming.length, upcoming.map((item) => item.minutes)).map((m) => m + 1);
-
-  const items = state.items.map((item, i) =>
-    i > state.currentIndex ? { ...item, minutes: minutes[i - state.currentIndex - 1] } : item,
-  );
-  return bump(state, { items });
+/** Jumps straight to any item (forward or back). Each item keeps the time it has already used. */
+export function goToItem(state: SessionState, index: number, now: number): SessionState {
+  if (!isLive(state) || index === state.currentIndex || index < 0 || index >= state.items.length) return state;
+  return bump(state, {
+    currentIndex: index,
+    elapsedMs: bank(state, now),
+    runningSince: state.status === "running" ? now : null,
+  });
 }
 
 /** Saves the agenda (only while in setup) so it can be prepared before the meeting. */

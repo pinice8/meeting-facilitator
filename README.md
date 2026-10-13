@@ -23,12 +23,13 @@ meeting is ahead or behind; organizers and presenters move between items.
   chat tab and whenever the page becomes visible; an automatic restart shows an **Undo** banner. The
   footer shows the build and what the last check decided, to debug in a real meeting.
 - **Top bar.** A bar pinned to the top shows the running item first, filling as its time passes
-  (green → amber → red), then the upcoming items; widths follow the planned minutes.
+  (green → amber → red), then the upcoming items; widths follow the planned minutes. Facilitators
+  click any item in the bar to jump to it (finished items are small ✓ chips you can click to go back).
 - **Meeting stage.** An organizer/presenter clicks **Show on stage** in the side panel; everyone then
   sees a full-width read-only view (big bar across the top, huge countdown, what is next). Needs the
   manifest's `meetingStage` context (v1.1.0+).
-- **During the meeting:** Previous / Pause / Next / Rebalance / End. Overrun goes red and counts
-  up; it never auto-advances. *Rebalance* redistributes the remaining time across the remaining items.
+- **During the meeting:** Previous / Pause / Next / End / Restart. Overrun goes red and counts
+  up; it never auto-advances.
 
 ## Layout
 

@@ -5,10 +5,10 @@ import {
   currentTone,
   elapsedOf,
   finishSession,
+  goToItem,
   nextItem,
   pauseSession,
   previousItem,
-  rebalance,
   resetSession,
   resumeSession,
   scheduleDeltaMs,
@@ -144,39 +144,39 @@ describe("scheduleDeltaMs", () => {
   });
 });
 
-describe("rebalance", () => {
-  it("shrinks the remaining items proportionally after an overrun", () => {
-    // 30 min meeting, item 1 (10) is at 16 min → 14 min left for items 2 (10) and 3 (10) → 7 + 7
+describe("goToItem", () => {
+  it("jumps forward, banking the time spent on the current item", () => {
     let s = startSession(agenda([10, 10, 10]), T0);
-    s = rebalance(s, T0 + min(16));
-    expect(s.items.map((i) => i.minutes)).toEqual([10, 7, 7]);
+    s = goToItem(s, 2, T0 + min(4));
+    expect(s.currentIndex).toBe(2);
+    expect(elapsedOf(s, 0, T0 + min(6))).toBe(min(4));
+    expect(elapsedOf(s, 1, T0 + min(6))).toBe(0);
+    expect(elapsedOf(s, 2, T0 + min(6))).toBe(min(2));
   });
 
-  it("subtracts the time still left on the current item", () => {
-    // at minute 12: item 1 is over (0 left), 18 min for the other two → 9 + 9
+  it("jumps back and resumes that item's accumulated time", () => {
     let s = startSession(agenda([10, 10, 10]), T0);
-    s = rebalance(s, T0 + min(12));
-    expect(s.items.map((i) => i.minutes)).toEqual([10, 9, 9]);
+    s = nextItem(s, T0 + min(4));
+    s = goToItem(s, 0, T0 + min(6));
+    expect(s.currentIndex).toBe(0);
+    expect(elapsedOf(s, 0, T0 + min(7))).toBe(min(5));
   });
 
-  it("keeps proportions between unequal items", () => {
-    let s = startSession(agenda([10, 10, 20], 40), T0);
-    // item 1 is at 20 min of 40 → 20 left for 10 + 20 → 7 + 13 (largest remainder)
-    s = rebalance(s, T0 + min(20));
-    expect(s.items.map((i) => i.minutes)).toEqual([10, 7, 13]);
+  it("stays paused when jumping while paused", () => {
+    let s = pauseSession(startSession(agenda([10, 10]), T0), T0 + min(1));
+    s = goToItem(s, 1, T0 + min(2));
+    expect(s.status).toBe("paused");
+    expect(s.runningSince).toBeNull();
+    expect(s.currentIndex).toBe(1);
   });
 
-  it("gives at least 1 minute each when there is not enough time", () => {
-    let s = startSession(agenda([10, 10, 10]), T0);
-    s = rebalance(s, T0 + min(29)); // 1 minute left for two items
-    expect(s.items.map((i) => i.minutes)).toEqual([10, 1, 1]);
-  });
-
-  it("does nothing on the last item or outside a live session", () => {
-    const last = nextItem(startSession(agenda([10, 10]), T0), T0 + min(1));
-    expect(rebalance(last, T0 + min(2))).toBe(last);
+  it("ignores the current item, out-of-range indexes and sessions that are not live", () => {
+    const s = startSession(agenda([10, 10]), T0);
+    expect(goToItem(s, 0, T0)).toBe(s);
+    expect(goToItem(s, 2, T0)).toBe(s);
+    expect(goToItem(s, -1, T0)).toBe(s);
     const setup = agenda([10, 10]);
-    expect(rebalance(setup, T0)).toBe(setup);
+    expect(goToItem(setup, 1, T0)).toBe(setup);
   });
 });
 

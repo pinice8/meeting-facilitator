@@ -7,7 +7,7 @@ import { defaultStorage, loadChatSettings, saveChatSettings, type ChatSettings, 
 export type ChatStatus =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "sent"; confirmed: boolean }
+  | { kind: "sent" }
   | { kind: "failed"; error: string };
 
 export interface ChatOptions {
@@ -55,9 +55,9 @@ export function useAgendaChat({ chatId, fetchFn, storage }: ChatOptions = {}): A
       if (!force && lastPosted[chatKey] === payload.text) return;
       setStatus({ kind: "sending" });
       try {
-        const result = await postAgendaToFlow(flowUrl, payload, fetchFn);
+        await postAgendaToFlow(flowUrl, payload, fetchFn);
         update({ lastPosted: { ...latest.current.lastPosted, [chatKey]: payload.text } });
-        setStatus({ kind: "sent", confirmed: result === "confirmed" });
+        setStatus({ kind: "sent" });
       } catch (error) {
         setStatus({ kind: "failed", error: error instanceof Error ? error.message : String(error) });
       }

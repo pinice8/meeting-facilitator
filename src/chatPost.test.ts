@@ -14,24 +14,24 @@ describe("isFlowUrl", () => {
 });
 
 describe("postAgendaToFlow", () => {
-  it("posts the payload as JSON text without a preflight-triggering content type", async () => {
-    const fetchFn = vi.fn().mockResolvedValue(new Response("ok", { status: 200 }));
+  it("posts the payload as a real JSON body", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
     await postAgendaToFlow("https://flow/x", payload, fetchFn);
     const [url, init] = fetchFn.mock.calls[0];
     expect(url).toBe("https://flow/x");
     expect(init.method).toBe("POST");
-    expect(init.headers).toEqual({ "Content-Type": "text/plain" });
+    expect(init.headers).toEqual({ "Content-Type": "application/json" });
     expect(JSON.parse(init.body)).toEqual(payload);
   });
 
-  it("is confirmed when the flow answers OK", async () => {
-    const fetchFn = vi.fn().mockResolvedValue(new Response("ok", { status: 200 }));
-    expect(await postAgendaToFlow("https://flow/x", payload, fetchFn)).toBe("confirmed");
+  it("resolves when the flow accepts it (the Teams webhook answers 202)", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response(null, { status: 202 }));
+    await expect(postAgendaToFlow("https://flow/x", payload, fetchFn)).resolves.toBeUndefined();
   });
 
-  it("is unconfirmed when the browser cannot read the answer (the request was still sent)", async () => {
+  it("says plainly when the browser could not reach the flow (never reports that as sent)", async () => {
     const fetchFn = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
-    expect(await postAgendaToFlow("https://flow/x", payload, fetchFn)).toBe("unconfirmed");
+    await expect(postAgendaToFlow("https://flow/x", payload, fetchFn)).rejects.toThrow(/couldn’t reach the flow.*blocked/);
   });
 
   it("throws when the flow answers with an error, including its explanation", async () => {

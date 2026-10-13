@@ -9,16 +9,8 @@ export function ChatStatusLine({ chat }: { chat: AgendaChat }) {
   const { status } = chat;
   if (status.kind === "idle") return null;
   if (status.kind === "sending") return <p className="muted" role="status">Posting the agenda to the meeting chat…</p>;
-  if (status.kind === "sent") {
-    return (
-      <p className="muted" role="status">
-        {status.confirmed
-          ? "Posted the agenda to the meeting chat."
-          : "Sent the agenda to your flow (it didn’t confirm, so check the meeting chat)."}
-      </p>
-    );
-  }
-  return <p className="error" role="alert">Couldn’t post the agenda: {status.error}.</p>;
+  if (status.kind === "sent") return <p className="muted" role="status">Sent the agenda to your flow. It should appear in the meeting chat in a few seconds.</p>;
+  return <p className="error" role="alert">Couldn’t post the agenda: {status.error}</p>;
 }
 
 interface Props {

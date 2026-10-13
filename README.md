@@ -103,10 +103,11 @@ Do this once, in https://make.powerautomate.com:
 
 The app sends a Teams "message with an adaptive card" (`type`, `attachments[]`, which is what the Teams
 webhook trigger validates) plus our own fields `chatId`, `message` (HTML), `text`, `totalMinutes` and
-`items[]`, as text/plain (no CORS preflight). If the flow rejects it, the app shows the flow's own
-explanation next to the HTTP status.
-This trigger does not answer in a way the browser can read, so the app says "sent, it didn't confirm";
-check the chat, and the flow's **Run history** in Power Automate shows what happened (and any error).
+`items[]`, as a normal `application/json` request. The trigger validates the body against a schema, so
+it must be real JSON (a text/plain body is rejected with "Expected Object but got String"). That makes
+the browser first ask the flow whether web pages may call it (CORS); if the flow refuses, the app says
+it could not reach the flow. A rejection shows the flow's own explanation next to the HTTP status; the
+flow's **Run history** in Power Automate shows what happened after it accepted the request.
 The footer's "chat id ok/missing" tells you whether Teams gave the app the meeting chat's id.
 Treat the URL like a password: anyone who has it can make your flow post, so never commit it.
 The message is posted as you. Your tenant may restrict "Anyone" triggers or the Teams connector.
@@ -121,7 +122,7 @@ The message is posted as you. Your tenant may restrict "Anyone" triggers or the 
 - [ ] Meeting side panel during the live meeting.
 - [ ] End the meeting for everyone, start it again: the agenda restarts from item 1.
 - [ ] **Show on stage** puts the big view on the stage for everyone (needs the v1.1.0 package).
-- [ ] **Agenda in chat**: *Copy agenda* works (or the text can be selected by hand); with a flow URL set, Save posts the agenda to the meeting chat once, and Save again with no change posts nothing.
+- [ ] **Agenda in chat**: *Copy agenda* works (or the text can be selected by hand); with a flow URL set, Save posts the agenda to the meeting chat once, and Save again with no change posts nothing (needs the flow to allow calls from web pages).
 - [ ] **Load from invite**: sign-in popup, event found, agenda and length filled in.
 
 ## Known limits

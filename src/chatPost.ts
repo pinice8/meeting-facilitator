@@ -1,7 +1,5 @@
 import type { FlowPayload } from "./core/agendaMessage";
 
-export type PostResult = "confirmed" | "unconfirmed";
-
 export function isFlowUrl(url: string): boolean {
   try {
     return new URL(url).protocol === "https:";
@@ -11,20 +9,21 @@ export function isFlowUrl(url: string): boolean {
 }
 
 /**
- * Sends the agenda to a Power Automate flow's HTTP URL. It is sent as text/plain so the browser
- * needs no CORS preflight (flows don't answer one); the flow parses the JSON itself.
- * "confirmed" means the flow answered and the browser let us read it (the flow's Response action
- * allows it); "unconfirmed" means the request went out but we could not read an answer. HTTP errors throw.
+ * Sends the agenda to a flow's URL as JSON. The Teams webhook trigger validates the body against a
+ * schema and needs a real JSON object, so this is a normal application/json request (the browser may
+ * first ask the flow whether web pages may call it). Resolves when the flow accepts it; throws with the
+ * flow's own explanation when it rejects it, or with a plain message when the browser could not reach it.
  */
-export async function postAgendaToFlow(url: string, payload: FlowPayload, fetchFn: typeof fetch = fetch): Promise<PostResult> {
+export async function postAgendaToFlow(url: string, payload: FlowPayload, fetchFn: typeof fetch = fetch): Promise<void> {
   let response: Response;
   try {
-    response = await fetchFn(url, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+    response = await fetchFn(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   } catch {
-    return "unconfirmed";
+    throw new Error(
+      "couldn’t reach the flow. Either you are offline, or the browser blocked the request because the flow does not allow calls from web pages",
+    );
   }
   if (!response.ok) throw new Error(`The flow answered ${response.status}${await explanation(response)}`);
-  return "confirmed";
 }
 
 /** The flow's own explanation of a rejection (trimmed), so "400" is never a mystery. */

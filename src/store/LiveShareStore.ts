@@ -1,4 +1,11 @@
-import { LiveShareClient, UserMeetingRole, type ILiveShareHost, type ITimestampProvider } from "@microsoft/live-share";
+import {
+  LivePresence,
+  LiveShareClient,
+  PresenceState,
+  UserMeetingRole,
+  type ILiveShareHost,
+  type ITimestampProvider,
+} from "@microsoft/live-share";
 import { LiveShareHost } from "@microsoft/teams-js";
 import { SharedMap } from "fluid-framework";
 import type { IAzureAudience } from "@fluidframework/azure-client";
@@ -14,6 +21,14 @@ const HEARTBEAT_KEY = "heartbeat";
  * Fluid SharedMap (survives everyone leaving, for up to ~24h, so the agenda can be prepared
  * before the meeting). Time is read from Live Share's synchronized clock.
  */
+/** Presence data each open app publishes: lets others tell the live meeting apart from a chat-tab view. */
+interface PresenceData {
+  inMeeting: boolean;
+}
+
+/** How long to wait for other participants' presence to arrive after joining. */
+const PRESENCE_SETTLE_MS = 2500;
+
 export class LiveShareStore implements SessionStore {
   readonly mode = "live-share" as const;
   private state: SessionState;
@@ -23,6 +38,7 @@ export class LiveShareStore implements SessionStore {
     private readonly map: SharedMap,
     private readonly timestamps: ITimestampProvider,
     readonly canControl: boolean,
+    private readonly presence: LivePresence<PresenceData>,
   ) {
     this.state = map.get<SessionState>(KEY) ?? emptySession();
     // Fluid orders all writes, so adopting every change keeps all clients converged.
@@ -36,6 +52,13 @@ export class LiveShareStore implements SessionStore {
   now = () => this.timestamps.getTimestamp();
   getState = () => this.state;
   lastActiveAt = () => this.map.get<number>(HEARTBEAT_KEY);
+
+  async othersInMeeting(): Promise<boolean> {
+    await sleep(PRESENCE_SETTLE_MS);
+    return this.presence
+      .getUsers(PresenceState.online)
+      .some((user) => !user.isLocalUser && user.getConnections(PresenceState.online).some((c) => c.data?.inMeeting));
+  }
 
   heartbeat(): void {
     if (this.canControl) this.map.set(HEARTBEAT_KEY, this.now());
@@ -86,13 +109,15 @@ async function resolveCanControl(host: ILiveShareHost, audience: IAzureAudience)
   }
 }
 
-export async function connectLiveShare(): Promise<LiveShareStore> {
+export async function connectLiveShare(inMeeting: boolean): Promise<LiveShareStore> {
   const host = LiveShareHost.create();
   const client = new LiveShareClient(host);
   const { container, services, timestampProvider } = await client.joinContainer({
-    initialObjects: { session: SharedMap },
+    initialObjects: { session: SharedMap, presence: LivePresence },
   });
   const map = container.initialObjects.session as SharedMap;
+  const presence = container.initialObjects.presence as LivePresence<PresenceData>;
+  await presence.initialize({ inMeeting });
   const canControl = await resolveCanControl(host, services.audience);
-  return new LiveShareStore(map, timestampProvider, canControl);
+  return new LiveShareStore(map, timestampProvider, canControl, presence);
 }

@@ -15,11 +15,30 @@ import { parseAgenda } from "./core/parser";
 import { planAgenda } from "./core/planner";
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
+/**
+ * Teams can keep serving a cached copy of this page. If the deployed build differs from the one
+ * running, reload once with a changed URL (a new cache key) to pick up the latest.
+ */
+async function reloadIfStale(): Promise<boolean> {
+  try {
+    const response = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: "no-store" });
+    const { build } = (await response.json()) as { build: string };
+    const url = new URL(window.location.href);
+    if (build === __BUILD_ID__ || url.searchParams.get("v") === build) return false;
+    url.searchParams.set("v", build);
+    window.location.replace(url.href);
+    return true;
+  } catch {
+    return false; // dev server or offline: carry on with what we have
+  }
+}
+
 interface RenderOptions {
   loadInvite?: InviteLoader;
   inMeeting?: boolean;
   view?: "panel" | "stage";
   onShareToStage?: () => Promise<void>;
+  frameContext?: string;
 }
 const render = (store: SessionStore, options: RenderOptions = {}) =>
   root.render(<StrictMode><App store={store} {...options} /></StrictMode>);
@@ -69,6 +88,8 @@ async function start() {
   const params = new URLSearchParams(window.location.search);
   if (params.has("harness")) return startHarness(params);
 
+  if (await reloadIfStale()) return;
+
   const teams = await initTeams();
   if (!teams) return message("Open this app inside Microsoft Teams (or add ?harness=1 to try it locally).");
 
@@ -77,7 +98,7 @@ async function start() {
 
   let store: SessionStore;
   try {
-    store = await connectLiveShare();
+    store = await connectLiveShare(MEETING_FRAMES.includes(teams.frameContext ?? ""));
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     store = new MemoryStore({ notice: `Couldn’t connect to the shared meeting session (${reason}). Showing a local-only timer.` });
@@ -89,6 +110,7 @@ async function start() {
     inMeeting: MEETING_FRAMES.includes(teams.frameContext ?? ""),
     view: teams.frameContext === "meetingStage" ? "stage" : "panel",
     onShareToStage: mayShare ? () => shareToStage(stageUrl) : undefined,
+    frameContext: teams.frameContext,
   });
   markLoaded();
 }

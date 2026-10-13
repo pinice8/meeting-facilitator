@@ -30,7 +30,7 @@ export function StageView({ store }: { store: SessionStore }) {
 
   return (
     <>
-      <AgendaBar store={store} large />
+      <AgendaBar store={store} variant="large" />
       <main className="stage">
         <p className="muted">Item {state.currentIndex + 1} of {state.items.length}{state.status === "paused" ? " · paused" : ""}</p>
         <h1 className="stage-title">{item.title}</h1>

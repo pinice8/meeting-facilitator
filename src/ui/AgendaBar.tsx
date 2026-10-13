@@ -7,7 +7,7 @@ import { MINUTE_MS, currentRemainingMs, currentTone, elapsedOf } from "../core/t
  * A bar pinned to the top of the view: the running item first (filling as its time passes),
  * then the upcoming items. Segment widths follow the planned minutes.
  */
-export function AgendaBar({ store, large = false }: { store: SessionStore; large?: boolean }) {
+export function AgendaBar({ store, variant = "panel" }: { store: SessionStore; variant?: "panel" | "large" | "strip" }) {
   const state = useSession(store);
   const now = useNow(store);
   const current = state.items[state.currentIndex];
@@ -18,7 +18,7 @@ export function AgendaBar({ store, large = false }: { store: SessionStore; large
   const upcoming = state.items.slice(state.currentIndex + 1);
 
   return (
-    <div className={`agenda-bar${large ? " agenda-bar-large" : ""}`} role="group" aria-label="Agenda progress">
+    <div className={`agenda-bar${variant === "panel" ? "" : ` agenda-bar-${variant}`}`} role="group" aria-label="Agenda progress">
       {state.currentIndex > 0 && (
         <div className="seg seg-done" title={`${state.currentIndex} item(s) done`}>✓ {state.currentIndex}</div>
       )}

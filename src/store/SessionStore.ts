@@ -17,6 +17,8 @@ export interface SessionStore {
   /** Returns the same object until the state changes (safe for useSyncExternalStore). */
   getState(): SessionState;
   subscribe(listener: () => void): () => void;
+  /** Whether another participant currently has the app open inside the meeting (waits briefly for presence to arrive). */
+  othersInMeeting(): Promise<boolean>;
   /** Synchronized time of the last facilitator heartbeat (undefined if none yet). */
   lastActiveAt(): number | undefined;
   /** Records "a facilitator is here now". No-op for read-only users. */

@@ -76,3 +76,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .stage-clock { font-size: 160px; font-weight: 600; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .stage-meta { font-size: 22px; color: var(--muted); }
 .stage-next { font-size: 26px; margin-top: 24px; }
+
+.footer { margin-top: 24px; font-size: 11px; color: var(--muted); }
+
+/* Floating strip window */
+.agenda-bar-strip { height: 100vh; min-height: 44px; font-size: 16px; border-bottom: 0; }
+.agenda-bar-strip .seg { padding: 0 14px; }
+.strip-message { display: flex; align-items: center; height: 100vh; min-height: 44px; padding: 0 14px; color: var(--muted); }

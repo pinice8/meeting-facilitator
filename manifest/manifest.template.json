@@ -1,0 +1,39 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "{{VERSION}}",
+  "id": "39853698-7450-437b-9131-f7267bef558e",
+  "developer": {
+    "name": "Pini Kaminer",
+    "websiteUrl": "{{BASE_URL}}",
+    "privacyUrl": "{{BASE_URL}}",
+    "termsOfUseUrl": "{{BASE_URL}}"
+  },
+  "name": { "short": "Meeting Facilitator", "full": "Meeting Facilitator" },
+  "description": {
+    "short": "Splits your meeting time across the agenda and keeps everyone on track.",
+    "full": "Add it to a meeting, load the agenda from the invite (or paste it), and the Meeting Facilitator splits the meeting time across the items. Everyone sees the current item, a live countdown and whether the meeting is ahead or behind; organizers and presenters move between items."
+  },
+  "icons": { "color": "color.png", "outline": "outline.png" },
+  "accentColor": "#5B5FC7",
+  "configurableTabs": [
+    {
+      "configurationUrl": "{{BASE_URL}}config.html",
+      "canUpdateConfiguration": false,
+      "scopes": ["groupChat"],
+      "context": ["meetingChatTab", "meetingDetailsTab", "meetingSidePanel"]
+    }
+  ],
+  "permissions": ["identity"],
+  "validDomains": ["{{HOST}}", "login.microsoftonline.com"],
+  "authorization": {
+    "permissions": {
+      "resourceSpecific": [
+        { "name": "LiveShareSession.ReadWrite.Chat", "type": "Delegated" },
+        { "name": "LiveShareSession.ReadWrite.Group", "type": "Delegated" },
+        { "name": "MeetingStage.Write.Chat", "type": "Delegated" },
+        { "name": "ChannelMeetingStage.Write.Group", "type": "Delegated" }
+      ]
+    }
+  }
+}

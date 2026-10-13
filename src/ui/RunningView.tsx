@@ -2,7 +2,6 @@ import type { SessionStore } from "../store/SessionStore";
 import { useNow, useSession } from "../store/hooks";
 import { formatClock, formatDelta } from "../core/format";
 import {
-  MINUTE_MS,
   currentRemainingMs,
   currentTone,
   elapsedOf,
@@ -26,7 +25,6 @@ export function RunningView({ store }: { store: SessionStore }) {
   const paused = state.status === "paused";
   const remaining = currentRemainingMs(state, now);
   const tone = currentTone(state, now);
-  const progress = Math.min(1, elapsedOf(state, state.currentIndex, now) / (item.minutes * MINUTE_MS));
   const delta = scheduleDeltaMs(state, now);
 
   return (
@@ -35,9 +33,6 @@ export function RunningView({ store }: { store: SessionStore }) {
       <h2 className="current-title">{item.title}</h2>
 
       <div className={`clock tone-${tone}`} aria-live="off">{formatClock(remaining)}</div>
-      <div className={`bar tone-${tone}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
-        <div style={{ width: `${progress * 100}%` }} />
-      </div>
       {tone === "over" && <p className="banner" role="alert">Time’s up on “{item.title}”.</p>}
 
       <p className="muted">

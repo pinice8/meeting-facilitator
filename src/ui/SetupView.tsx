@@ -15,9 +15,10 @@ export type InviteLoader = () => Promise<InviteResult>;
 interface Props {
   store: SessionStore;
   loadInvite?: InviteLoader;
+  inMeeting?: boolean;
 }
 
-export function SetupView({ store, loadInvite }: Props) {
+export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
   const saved = useSession(store);
   const [text, setText] = useState(() => itemsToText(saved.items));
   const [total, setTotal] = useState(saved.totalMinutes);
@@ -147,9 +148,14 @@ export function SetupView({ store, loadInvite }: Props) {
 
       <div className="row">
         <button type="button" onClick={save} disabled={!canStart}>Save agenda</button>
-        <button type="button" className="primary" onClick={start} disabled={!canStart}>Start meeting</button>
+        <button type="button" className={inMeeting ? "primary" : ""} onClick={start} disabled={!canStart}>
+          {inMeeting ? "Start meeting" : "Start now"}
+        </button>
         {justSaved && <span className="muted">Saved — everyone in the meeting can see it.</span>}
       </div>
+      {!inMeeting && (
+        <p className="muted">Once saved, the meeting starts by itself when you open this app inside the meeting.</p>
+      )}
     </section>
   );
 }

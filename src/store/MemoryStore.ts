@@ -6,6 +6,7 @@ export interface MemoryStoreOptions {
   initial?: SessionState;
   clock?: () => number;
   notice?: string;
+  lastActiveAt?: number;
 }
 
 /** Local-only store: used by the dev harness, tests, and as the fallback when Live Share is unavailable. */
@@ -14,6 +15,7 @@ export class MemoryStore implements SessionStore {
   readonly canControl: boolean;
   readonly notice?: string;
   private state: SessionState;
+  private active?: number;
   private readonly listeners = new Set<() => void>();
   private readonly clock: () => number;
 
@@ -21,11 +23,17 @@ export class MemoryStore implements SessionStore {
     this.canControl = options.canControl ?? true;
     this.notice = options.notice;
     this.state = options.initial ?? emptySession();
+    this.active = options.lastActiveAt;
     this.clock = options.clock ?? Date.now;
   }
 
   now = () => this.clock();
   getState = () => this.state;
+  lastActiveAt = () => this.active;
+
+  heartbeat(): void {
+    if (this.canControl) this.active = this.now();
+  }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);

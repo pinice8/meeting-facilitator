@@ -17,6 +17,10 @@ export interface SessionStore {
   /** Returns the same object until the state changes (safe for useSyncExternalStore). */
   getState(): SessionState;
   subscribe(listener: () => void): () => void;
+  /** Synchronized time of the last facilitator heartbeat (undefined if none yet). */
+  lastActiveAt(): number | undefined;
+  /** Records "a facilitator is here now". No-op for read-only users. */
+  heartbeat(): void;
   /** Applies a pure transition to the latest state and shares the result. No-op for read-only users. */
   update(transition: Transition): void;
 }

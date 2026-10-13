@@ -49,3 +49,20 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .tone-over { color: var(--over); }
 .banner { background: var(--over); color: var(--bg); padding: 8px 12px; border-radius: 4px; font-weight: 600; }
 .controls button { min-width: 84px; }
+
+/* Top bar: running item first (filling), then the upcoming items */
+.agenda-bar { position: sticky; top: 0; z-index: 10; display: flex; gap: 2px; height: 44px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.seg { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 88px; padding: 0 10px; overflow: hidden; background: var(--card); white-space: nowrap; }
+.seg-title { position: relative; overflow: hidden; text-overflow: ellipsis; }
+.seg-time { position: relative; font-variant-numeric: tabular-nums; color: var(--muted); }
+.seg-done { flex: 0 0 auto; min-width: 0; color: var(--muted); }
+.seg-upcoming { color: var(--muted); }
+.seg-current { color: var(--fg); font-weight: 600; border-bottom: 3px solid currentColor; }
+.seg-current.tone-ok { border-bottom-color: var(--ok); }
+.seg-current.tone-warn { border-bottom-color: var(--warn); }
+.seg-current.tone-over { border-bottom-color: var(--over); }
+.seg-current .seg-time { color: var(--fg); }
+.seg-fill { position: absolute; inset: 0 auto 0 0; opacity: 0.3; transition: width 0.25s linear; }
+.seg-current.tone-ok .seg-fill { background: var(--ok); }
+.seg-current.tone-warn .seg-fill { background: var(--warn); }
+.seg-current.tone-over .seg-fill { background: var(--over); }

@@ -6,6 +6,8 @@ import { emptySession, type SessionState } from "../core/types";
 import type { SessionStore, Transition } from "./SessionStore";
 
 const KEY = "session";
+// Kept in its own key so a heartbeat can never overwrite a concurrent change to the session.
+const HEARTBEAT_KEY = "heartbeat";
 
 /**
  * Shared state in the meeting's Live Share session: one JSON snapshot in a persistent
@@ -33,6 +35,11 @@ export class LiveShareStore implements SessionStore {
 
   now = () => this.timestamps.getTimestamp();
   getState = () => this.state;
+  lastActiveAt = () => this.map.get<number>(HEARTBEAT_KEY);
+
+  heartbeat(): void {
+    if (this.canControl) this.map.set(HEARTBEAT_KEY, this.now());
+  }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);

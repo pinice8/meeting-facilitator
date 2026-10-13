@@ -11,6 +11,14 @@ meeting is ahead or behind; organizers and presenters move between items.
   calendar event through Microsoft Graph; needs the Entra setup below).
 - **Time split:** items with minutes keep them; the rest of the meeting is divided evenly across the
   others. Over-long plans are flagged, never silently rescaled.
+- **Starts by itself.** Save the agenda before the meeting (chat tab → *Save agenda*). When an
+  organizer or presenter opens the app inside the live meeting (side panel / stage) the saved agenda
+  starts running. If the previous run is stale (no facilitator heartbeat for 10 min) it is reset and
+  started again, so a meeting that ended and began again gets a fresh run. Teams gives tab apps no
+  "meeting started/ended" event (that needs a bot + backend), so "started" means "a facilitator opened
+  the app in the meeting".
+- **Top bar.** A bar pinned to the top shows the running item first, filling as its time passes
+  (green → amber → red), then the upcoming items; widths follow the planned minutes.
 - **During the meeting:** Previous / Pause / Next / Rebalance / End. Overrun goes red and counts
   up; it never auto-advances. *Rebalance* redistributes the remaining time across the remaining items.
 
@@ -32,7 +40,8 @@ npm test            # unit tests
 npm run dev         # then open http://localhost:5173/?harness=1
 ```
 
-Harness options: `&role=attendee` for the read-only view, `&speed=60` to make a minute pass per second.
+Harness options: `&role=attendee` (read-only view), `&speed=60` (a minute passes per second), `&meeting=1`
+(behave like the in-meeting panel, i.e. auto-start) and `&agenda=Intro - 2|Demo|Q%26A - 1&total=6` (pre-saved agenda).
 
 ## Deploy
 
@@ -64,7 +73,8 @@ Without this the button is hidden and you paste the agenda instead.
 - [ ] App installs and the config page's **Save** creates the tab (manifest + RSC permissions accepted).
 - [ ] Two participants see the same agenda, current item and countdown (Live Share sync).
 - [ ] The organizer/presenter sees the controls; an attendee sees "View only".
-- [ ] Agenda saved before the meeting is still there when the meeting starts.
+- [ ] Agenda saved before the meeting is still there, and starts by itself when you open the app in the meeting.
+- [ ] End the meeting, wait > 10 min, start it again: the agenda restarts from item 1.
 - [ ] A late joiner gets the current state.
 - [ ] Meeting side panel during the live meeting.
 - [ ] **Load from invite**: sign-in popup, event found, agenda and length filled in.

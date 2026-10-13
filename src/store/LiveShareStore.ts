@@ -38,7 +38,8 @@ export class LiveShareStore implements SessionStore {
     private readonly map: SharedMap,
     private readonly timestamps: ITimestampProvider,
     readonly canControl: boolean,
-    private readonly presence: LivePresence<PresenceData>,
+    /** Missing in sessions created by older versions of the app (a session's objects are fixed at creation). */
+    private readonly presence: LivePresence<PresenceData> | undefined,
   ) {
     this.state = map.get<SessionState>(KEY) ?? emptySession();
     // Fluid orders all writes, so adopting every change keeps all clients converged.
@@ -54,6 +55,7 @@ export class LiveShareStore implements SessionStore {
   lastActiveAt = () => this.map.get<number>(HEARTBEAT_KEY);
 
   async othersInMeeting(): Promise<boolean> {
+    if (!this.presence) return false; // fall back to the heartbeat alone
     await sleep(PRESENCE_SETTLE_MS);
     return this.presence
       .getUsers(PresenceState.online)
@@ -116,8 +118,12 @@ export async function connectLiveShare(inMeeting: boolean): Promise<LiveShareSto
     initialObjects: { session: SharedMap, presence: LivePresence },
   });
   const map = container.initialObjects.session as SharedMap;
-  const presence = container.initialObjects.presence as LivePresence<PresenceData>;
-  await presence.initialize({ inMeeting });
+  let presence = container.initialObjects.presence as LivePresence<PresenceData> | undefined;
+  try {
+    await presence?.initialize({ inMeeting });
+  } catch {
+    presence = undefined; // presence is an enhancement: never let it break the session
+  }
   const canControl = await resolveCanControl(host, services.audience);
   return new LiveShareStore(map, timestampProvider, canControl, presence);
 }

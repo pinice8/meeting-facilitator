@@ -81,3 +81,6 @@ button.seg-button:focus-visible { outline: 2px solid var(--brand); outline-offse
 .stage-next { font-size: 26px; margin-top: 24px; }
 
 .footer { margin-top: 24px; font-size: 11px; color: var(--muted); }
+
+.who { color: var(--muted); font-weight: 400; }
+.who-input { width: 100%; min-width: 120px; }

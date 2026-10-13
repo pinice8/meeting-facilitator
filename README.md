@@ -9,6 +9,13 @@ meeting is ahead or behind; organizers and presenters move between items.
   (Microsoft-hosted, data kept up to 24 h).
 - **Agenda input:** paste text (`Demo - 10`, `Demo (10 min)`, …) or **Load from invite** (reads the
   calendar event through Microsoft Graph; needs the Entra setup below).
+- **Participants per item.** Add `| Alice, Bob` to an agenda line (or use the table's Participants
+  column). When that item starts (meeting start, Next, a click in the bar, Resume) the facilitator whose
+  action started it posts one message in the meeting chat, as themselves, @-tagging those people. Names
+  or emails are matched against the meeting chat's members (a unique match on email, full name, first
+  name or part of a name; ambiguous or unknown names are shown as plain text and reported in the
+  panel). Each item is announced once per run: the "announced" mark is written together with the change,
+  so a second facilitator's panel never sends it again. Needs the sign-in setup below.
 - **Time split:** items with minutes keep them; the rest of the meeting is divided evenly across the
   others. Over-long plans are flagged, never silently rescaled.
 - **Starts by itself.** Save the agenda before the meeting (chat tab → *Save agenda*). When an
@@ -67,15 +74,19 @@ Upload `dist-app/meeting-facilitator.zip` in Teams → Apps → Manage your apps
 a scheduled meeting's chat click **+**, choose *Meeting Facilitator*, and **Save**. Bump
 `version` in `package.json` when you change the manifest, and use *Upload a new version*.
 
-## "Load from invite" setup (optional)
+## Sign-in setup (optional, needed for "Load from invite" and for tagging participants)
 
 1. Entra admin center → App registrations → New registration (single tenant is fine).
 2. Authentication → add a **Single-page application** redirect URI:
    `https://<user>.github.io/meeting-facilitator/auth-end.html`.
-3. API permissions → Microsoft Graph → Delegated → `Calendars.Read` (grant consent if your tenant requires it).
+3. API permissions → Microsoft Graph → **Delegated**:
+   - `Calendars.Read` — read the invite for "Load from invite";
+   - `ChatMember.Read` and `ChatMessage.Send` — find the people in the meeting chat and post the tag message.
+   Grant consent if your tenant requires admin consent. The scopes are requested separately per
+   feature, so a tenant that blocks the chat permissions still allows reading the invite.
 4. In the GitHub repo set variables `ENTRA_CLIENT_ID` (and optionally `ENTRA_TENANT` = your tenant id), then re-run the deploy workflow.
 
-Without this the button is hidden and you paste the agenda instead.
+Without this, the invite button is hidden, participants are saved but nobody is tagged, and you paste the agenda instead.
 
 ## Checks that only a real meeting can prove
 
@@ -87,6 +98,7 @@ Without this the button is hidden and you paste the agenda instead.
 - [ ] Meeting side panel during the live meeting.
 - [ ] End the meeting for everyone, start it again: the agenda restarts from item 1.
 - [ ] **Show on stage** puts the big view on the stage for everyone (needs the v1.1.0 package).
+- [ ] **Tagging**: an item with participants posts one chat message tagging them when it starts; going back to it does not post again; a name not in the chat is reported.
 - [ ] **Load from invite**: sign-in popup, event found, agenda and length filled in.
 
 ## Known limits

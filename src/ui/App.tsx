@@ -6,6 +6,8 @@ import { DoneView } from "./DoneView";
 import { AgendaBar } from "./AgendaBar";
 import { StageView } from "./StageView";
 import { useLifecycle } from "./useLifecycle";
+import { AnnouncementBanner } from "./AnnouncementBanner";
+import type { Announcer } from "../announcer";
 
 interface Props {
   store: SessionStore;
@@ -18,9 +20,11 @@ interface Props {
   view?: "panel" | "stage";
   /** Present only when the local user may share the app to the meeting stage. */
   onShareToStage?: () => Promise<void>;
+  /** Present when participants can be tagged in the meeting chat (needs the Entra setup). */
+  announcer?: Announcer;
 }
 
-export function App({ store, loadInvite, inMeeting = false, view = "panel", onShareToStage, frameContext }: Props) {
+export function App({ store, loadInvite, inMeeting = false, view = "panel", onShareToStage, frameContext, announcer }: Props) {
   const session = useSession(store);
   const { diagnostics, restart, undo, dismiss } = useLifecycle(store, inMeeting);
 
@@ -37,13 +41,14 @@ export function App({ store, loadInvite, inMeeting = false, view = "panel", onSh
           {!store.canControl && <span className="badge">View only</span>}
         </header>
         {store.notice && <p className="notice" role="status">{store.notice}</p>}
+        {announcer && <AnnouncementBanner announcer={announcer} />}
         {restart && (
           <p className="notice" role="status">
             Started the agenda again: the previous run had no facilitator for a while.{" "}
             <button type="button" onClick={undo}>Undo</button> <button type="button" onClick={dismiss}>Dismiss</button>
           </p>
         )}
-        {session.status === "setup" && <SetupView store={store} loadInvite={loadInvite} inMeeting={inMeeting} />}
+        {session.status === "setup" && <SetupView store={store} loadInvite={loadInvite} inMeeting={inMeeting} canNotify={announcer !== undefined} />}
         {live && <RunningView store={store} onShareToStage={onShareToStage} />}
         {session.status === "done" && <DoneView store={store} />}
         <footer className="footer">

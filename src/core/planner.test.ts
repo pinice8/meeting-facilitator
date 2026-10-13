@@ -48,6 +48,12 @@ describe("planAgenda", () => {
     expect(plan.overByMinutes).toBe(1);
   });
 
+  it("keeps participants on the planned items", () => {
+    const plan = planAgenda([{ title: "A", participants: ["Alice"] }, { title: "B" }], 10);
+    expect(plan.items[0].participants).toEqual(["Alice"]);
+    expect(plan.items[1]).not.toHaveProperty("participants");
+  });
+
   it("gives stable ids", () => {
     expect(planAgenda([{ title: "A" }, { title: "B" }], 10).items.map((i) => i.id)).toEqual(["item-1", "item-2"]);
   });

@@ -3,7 +3,7 @@ import type { SessionStore } from "../store/SessionStore";
 import { useSession } from "../store/hooks";
 import { parseAgenda } from "../core/parser";
 import { planAgenda } from "../core/planner";
-import { itemsToText, setMinutesInText } from "../core/agendaText";
+import { itemsToText, setMinutesInText, setParticipantsInText } from "../core/agendaText";
 import { setAgenda, startSession } from "../core/timer";
 
 export interface InviteResult {
@@ -16,9 +16,11 @@ interface Props {
   store: SessionStore;
   loadInvite?: InviteLoader;
   inMeeting?: boolean;
+  /** Participants get tagged in the meeting chat when their item starts. */
+  canNotify?: boolean;
 }
 
-export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
+export function SetupView({ store, loadInvite, inMeeting = false, canNotify = false }: Props) {
   const saved = useSession(store);
   const [text, setText] = useState(() => itemsToText(saved.items));
   const [total, setTotal] = useState(saved.totalMinutes);
@@ -40,7 +42,10 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
             <ol className="agenda">
               {saved.items.map((item) => (
                 <li key={item.id}>
-                  <span>{item.title}</span>
+                  <span>
+                    {item.title}
+                    {item.participants?.length ? <span className="who"> · {item.participants.join(", ")}</span> : null}
+                  </span>
                   <span className="minutes">{item.minutes} min</span>
                 </li>
               ))}
@@ -116,7 +121,7 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
       {plan.items.length > 0 && (
         <table className="plan">
           <thead>
-            <tr><th>#</th><th>Item</th><th>Minutes</th></tr>
+            <tr><th>#</th><th>Item</th><th>Minutes</th><th>Participants</th></tr>
           </thead>
           <tbody>
             {plan.items.map((item, i) => (
@@ -133,12 +138,29 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
                     onChange={(e) => edit(setMinutesInText(text, i, Math.max(1, Number(e.target.value) || 1)))}
                   />
                 </td>
+                <td>
+                  {/* Uncontrolled + commit on blur/Enter: rewriting the text on every keystroke would eat the commas being typed. */}
+                  <input
+                    key={`${item.id}:${item.participants?.join(", ") ?? ""}`}
+                    className="who-input"
+                    aria-label={`Participants for ${item.title}`}
+                    placeholder="Alice, Bob"
+                    defaultValue={item.participants?.join(", ") ?? ""}
+                    onBlur={(e) => {
+                      if (e.target.value !== (item.participants?.join(", ") ?? "")) edit(setParticipantsInText(text, i, e.target.value));
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
+      {plan.items.some((item) => item.participants?.length) && !canNotify && (
+        <p className="muted">Participants are saved, but nobody will be tagged in the meeting chat until sign-in is set up (see the README).</p>
+      )}
       {plan.overByMinutes > 0 && (
         <p className="error" role="alert">The plan is {plan.overByMinutes} min over the meeting length. Shorten an item or extend the meeting.</p>
       )}

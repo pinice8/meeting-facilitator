@@ -80,7 +80,11 @@ export function RunningView({ store, onShareToStage }: Props) {
           const actual = elapsedOf(state, i, now);
           return (
             <li key={entry.id} className={`agenda-${status}`} aria-current={status === "current" ? "step" : undefined}>
-              <span>{status === "done" ? "✓ " : status === "current" ? "▶ " : ""}{entry.title}</span>
+              <span>
+                {status === "done" ? "✓ " : status === "current" ? "▶ " : ""}
+                {entry.title}
+                {entry.participants?.length ? <span className="who"> · {entry.participants.join(", ")}</span> : null}
+              </span>
               <span className="minutes">
                 {status === "done" ? `${formatClock(actual)} / ${entry.minutes} min` : `${entry.minutes} min`}
               </span>

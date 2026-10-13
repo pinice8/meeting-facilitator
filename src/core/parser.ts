@@ -1,6 +1,7 @@
 export interface ParsedItem {
   title: string;
   minutes?: number;
+  participants?: string[];
 }
 
 const BULLET = /^\s*(?:[-*•–·▪]|\d+[.)])\s+/;
@@ -12,9 +13,25 @@ function validMinutes(raw: string): number | undefined {
   return Number.isInteger(n) && n >= 1 && n <= MAX_MINUTES ? n : undefined;
 }
 
-/** Splits one agenda line into a title and optional minutes. Returns undefined for blank lines. */
+function parseParticipants(text: string): string[] {
+  return text
+    .split(/[,;]/)
+    .map((name) => name.trim().replace(/^@/, ""))
+    .filter(Boolean);
+}
+
+/** Splits one agenda line into title, optional minutes and optional participants ("... | Alice, Bob"). */
 function parseLine(rawLine: string): ParsedItem | undefined {
-  const line = rawLine.replace(BULLET, "").trim();
+  const stripped = rawLine.replace(BULLET, "").trim();
+  const split = stripped.match(/^(.*?)\s*\|\s*(.*)$/);
+  const main = split ? split[1].trim() : stripped;
+  const participants = split ? parseParticipants(split[2]) : [];
+  const item = parseTitleAndMinutes(main);
+  if (!item) return undefined;
+  return participants.length > 0 ? { ...item, participants } : item;
+}
+
+function parseTitleAndMinutes(line: string): ParsedItem | undefined {
   if (!line) return undefined;
 
   // "10 min - Title"

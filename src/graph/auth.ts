@@ -1,7 +1,10 @@
 import { authentication } from "@microsoft/teams-js";
 import type { Configuration } from "@azure/msal-browser";
 
-export const GRAPH_SCOPES = ["Calendars.Read"];
+/** Reading the invite. */
+export const CALENDAR_SCOPES = ["Calendars.Read"];
+/** Reading the meeting chat's members and posting to it as the user. */
+export const CHAT_SCOPES = ["ChatMember.Read", "ChatMessage.Send"];
 
 const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID as string | undefined;
 const tenant = (import.meta.env.VITE_ENTRA_TENANT as string | undefined) || "organizations";
@@ -23,13 +26,20 @@ interface CachedToken {
   token: string;
   expiresAt: number;
 }
-let cached: CachedToken | undefined;
+const cache = new Map<string, CachedToken>();
 
-/** Opens the Teams sign-in popup (auth-start.html → Microsoft sign-in → auth-end.html) and returns a Graph token. */
-export async function getGraphToken(): Promise<string> {
-  if (cached && cached.expiresAt - 60_000 > Date.now()) return cached.token;
-  const raw = await authentication.authenticate({ url: authPageUrl("auth-start.html"), width: 600, height: 700 });
+/**
+ * Opens the Teams sign-in popup (auth-start.html → Microsoft sign-in → auth-end.html) and returns a
+ * Graph token for the scopes. Scopes are requested separately per feature, so a tenant that blocks
+ * chat permissions does not also break reading the invite.
+ */
+export async function getGraphToken(scopes: string[]): Promise<string> {
+  const key = scopes.join(" ");
+  const hit = cache.get(key);
+  if (hit && hit.expiresAt - 60_000 > Date.now()) return hit.token;
+  const url = `${authPageUrl("auth-start.html")}?scopes=${encodeURIComponent(key)}`;
+  const raw = await authentication.authenticate({ url, width: 600, height: 700 });
   const result = JSON.parse(raw) as { token: string; expiresOn?: number };
-  cached = { token: result.token, expiresAt: result.expiresOn ?? Date.now() + 50 * 60_000 };
+  cache.set(key, { token: result.token, expiresAt: result.expiresOn ?? Date.now() + 50 * 60_000 });
   return result.token;
 }

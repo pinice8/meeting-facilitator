@@ -33,6 +33,17 @@ describe("parseAgenda", () => {
     expect(parseAgenda("- 10")).toEqual([{ title: "10" }]);
   });
 
+  it("parses participants after a pipe, with or without minutes", () => {
+    expect(parseAgenda("Demo - 10 | Alice, Bob")).toEqual([{ title: "Demo", minutes: 10, participants: ["Alice", "Bob"] }]);
+    expect(parseAgenda("Retro | alice@nice.com; @Bob Lee")).toEqual([{ title: "Retro", participants: ["alice@nice.com", "Bob Lee"] }]);
+    expect(parseAgenda("- Demo (5 min) |Alice")).toEqual([{ title: "Demo", minutes: 5, participants: ["Alice"] }]);
+  });
+
+  it("ignores an empty participants list and skips a line with only participants", () => {
+    expect(parseAgenda("Demo |")).toEqual([{ title: "Demo" }]);
+    expect(parseAgenda(" | Alice")).toEqual([]);
+  });
+
   it("returns an empty list for empty input", () => {
     expect(parseAgenda("  \n \n")).toEqual([]);
   });

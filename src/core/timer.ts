@@ -72,6 +72,7 @@ export function startSession(state: SessionState, now: number): SessionState {
     currentIndex: 0,
     elapsedMs: state.items.map(() => 0),
     runningSince: now,
+    announced: [],
   });
 }
 
@@ -114,7 +115,7 @@ export function finishSession(state: SessionState, now: number): SessionState {
 
 /** Back to setup, keeping the agenda but clearing all timing data. */
 export function resetSession(state: SessionState): SessionState {
-  return bump(state, { status: "setup", currentIndex: 0, elapsedMs: [], runningSince: null });
+  return bump(state, { status: "setup", currentIndex: 0, elapsedMs: [], runningSince: null, announced: [] });
 }
 
 /** Jumps straight to any item (forward or back). Each item keeps the time it has already used. */
@@ -130,5 +131,17 @@ export function goToItem(state: SessionState, index: number, now: number): Sessi
 /** Saves the agenda (only while in setup) so it can be prepared before the meeting. */
 export function setAgenda(state: SessionState, items: SessionState["items"], totalMinutes: number): SessionState {
   if (state.status !== "setup") return state;
-  return bump(state, { items, totalMinutes, currentIndex: 0, elapsedMs: [], runningSince: null });
+  return bump(state, { items, totalMinutes, currentIndex: 0, elapsedMs: [], runningSince: null, announced: [] });
+}
+
+/** The running item whose participants still have to be called in, if any (never while paused). */
+export function pendingAnnouncement(state: SessionState): SessionState["items"][number] | undefined {
+  if (state.status !== "running") return undefined;
+  const item = state.items[state.currentIndex];
+  if (!item?.participants?.length) return undefined;
+  return (state.announced ?? []).includes(item.id) ? undefined : item;
+}
+
+export function markAnnounced(state: SessionState, itemId: string): SessionState {
+  return bump(state, { announced: [...(state.announced ?? []), itemId] });
 }

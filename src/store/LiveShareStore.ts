@@ -10,6 +10,9 @@ import { LiveShareHost } from "@microsoft/teams-js";
 import { SharedMap } from "fluid-framework";
 import type { IAzureAudience } from "@fluidframework/azure-client";
 import { emptySession, type SessionState } from "../core/types";
+
+/** States saved by older versions lack newer fields. */
+const normalize = (saved: SessionState | undefined): SessionState => ({ ...emptySession(), ...saved });
 import type { SessionStore, Transition } from "./SessionStore";
 
 const KEY = "session";
@@ -41,11 +44,11 @@ export class LiveShareStore implements SessionStore {
     /** Missing in sessions created by older versions of the app (a session's objects are fixed at creation). */
     private readonly presence: LivePresence<PresenceData> | undefined,
   ) {
-    this.state = map.get<SessionState>(KEY) ?? emptySession();
+    this.state = normalize(map.get<SessionState>(KEY));
     // Fluid orders all writes, so adopting every change keeps all clients converged.
     map.on("valueChanged", (changed) => {
       if (changed.key !== KEY) return;
-      this.state = map.get<SessionState>(KEY) ?? emptySession();
+      this.state = normalize(map.get<SessionState>(KEY));
       this.emit();
     });
   }

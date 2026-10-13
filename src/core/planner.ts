@@ -61,6 +61,7 @@ export function planAgenda(parsed: ParsedItem[], totalMinutes: number): PlanResu
     id: `item-${index + 1}`,
     title: item.title,
     minutes: item.minutes ?? flexMinutes[flexIndex++],
+    ...(item.participants?.length ? { participants: item.participants } : {}),
   }));
 
   return { items, ...summarizePlan(items, totalMinutes) };

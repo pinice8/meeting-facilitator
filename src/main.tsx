@@ -6,10 +6,12 @@ import { MemoryStore } from "./store/MemoryStore";
 import type { SessionStore } from "./store/SessionStore";
 import { connectLiveShare } from "./store/LiveShareStore";
 import { applyTheme, canShareToStage, getMeetingInfo, initTeams, markLoaded, shareToStage, watchTheme } from "./teams";
-import { getGraphToken, isGraphConfigured } from "./graph/auth";
+import { CALENDAR_SCOPES, CHAT_SCOPES, getGraphToken, isGraphConfigured } from "./graph/auth";
 import { fetchInvite } from "./graph/invite";
 import { extractAgendaFromInvite } from "./core/invite";
 import type { InviteLoader } from "./ui/SetupView";
+import { Announcer } from "./announcer";
+import { AnnouncingStore } from "./store/AnnouncingStore";
 import { emptySession } from "./core/types";
 import { startSession } from "./core/timer";
 import { parseAgenda } from "./core/parser";
@@ -35,6 +37,7 @@ async function reloadIfStale(): Promise<boolean> {
 }
 
 interface RenderOptions {
+  announcer?: Announcer;
   loadInvite?: InviteLoader;
   inMeeting?: boolean;
   view?: "panel" | "stage";
@@ -48,10 +51,10 @@ const message = (text: string) => root.render(<main className="app"><p>{text}</p
 
 /**
  * Local try-out outside Teams: ?harness=1 [&role=attendee] [&speed=60] [&meeting=1]
- * [&agenda=Intro - 2|Demo|Q&A - 1] [&total=6] [&stage=1] [&share=1]
+ * [&agenda=Intro - 2~Demo | Alice~Q&A - 1] [&total=6] [&stage=1] [&share=1]
  * speed N makes time run N times faster; meeting=1 behaves like the in-meeting panel (auto-start);
  * stage=1 shows the meeting-stage view; share=1 shows the "Show on stage" button (does nothing);
- * stale=1 loads the agenda as a run left over from a meeting that ended 30 minutes ago.
+ * notify=1 fakes the chat tagging (members Alice Smith, Bob Lee); stale=1 loads the agenda as a run left over from a meeting that ended 30 minutes ago.
  */
 function startHarness(params: URLSearchParams) {
   const speed = Number(params.get("speed")) || 1;
@@ -59,17 +62,21 @@ function startHarness(params: URLSearchParams) {
   const agenda = params.get("agenda");
   const total = Number(params.get("total")) || 30;
   const saved = agenda
-    ? { ...emptySession(total), items: planAgenda(parseAgenda(agenda.split("|").join("\n")), total).items }
+    ? { ...emptySession(total), items: planAgenda(parseAgenda(agenda.split("~").join("\n")), total).items }
     : undefined;
   const initial = saved && params.get("stale") === "1" ? startSession(saved, t0 - 30 * 60_000) : saved;
-  render(
-    new MemoryStore({
-      canControl: params.get("role") !== "attendee",
-      clock: () => t0 + (Date.now() - t0) * speed,
-      notice: "Local harness: nothing is shared.",
-      initial,
-    }),
-    {
+  const memory = new MemoryStore({
+    canControl: params.get("role") !== "attendee",
+    clock: () => t0 + (Date.now() - t0) * speed,
+    notice: "Local harness: nothing is shared.",
+    initial,
+  });
+  const announcer =
+    params.get("notify") === "1"
+      ? new Announcer({ getToken: async () => "fake", chatId: "harness", fetchFn: fakeGraph })
+      : undefined;
+  render(announcer ? new AnnouncingStore(memory, (item) => void announcer.announce(item)) : memory, {
+      announcer,
       inMeeting: params.get("meeting") === "1" || params.get("stage") === "1",
       view: params.get("stage") === "1" ? "stage" : "panel",
       onShareToStage: params.get("share") === "1" ? () => Promise.resolve() : undefined,
@@ -79,10 +86,19 @@ function startHarness(params: URLSearchParams) {
 
 const MEETING_FRAMES = ["sidePanel", "meetingStage"];
 
+/** Stand-in for Microsoft Graph in the harness: two chat members, and posting always succeeds. */
+const fakeGraph: typeof fetch = async (_url, init) =>
+  init?.method === "POST"
+    ? new Response("{}", { status: 201 })
+    : new Response(
+        JSON.stringify({ value: [{ userId: "u1", displayName: "Alice Smith", email: "alice@example.com" }, { userId: "u2", displayName: "Bob Lee" }] }),
+        { status: 200 },
+      );
+
 const inviteLoader: InviteLoader = async () => {
   const info = await getMeetingInfo();
   if (!info?.joinUrl) throw new Error("Teams didn’t provide this meeting’s join link");
-  const token = await getGraphToken();
+  const token = await getGraphToken(CALENDAR_SCOPES);
   const invite = await fetchInvite(token, info.joinUrl);
   return { agenda: extractAgendaFromInvite(invite.bodyText), totalMinutes: invite.totalMinutes };
 };
@@ -106,9 +122,17 @@ async function start() {
     const reason = error instanceof Error ? error.message : String(error);
     store = new MemoryStore({ notice: `Couldn’t connect to the shared meeting session (${reason}). Showing a local-only timer.` });
   }
+  let announcer: Announcer | undefined;
+  if (isGraphConfigured() && teams.chatId) {
+    const pings = new Announcer({ getToken: () => getGraphToken(CHAT_SCOPES), chatId: teams.chatId });
+    announcer = pings;
+    store = new AnnouncingStore(store, (item) => void pings.announce(item));
+  }
+
   const stageUrl = new URL("index.html", window.location.href).href;
   const mayShare = teams.frameContext === "sidePanel" && (await canShareToStage());
   render(store, {
+    announcer,
     loadInvite: isGraphConfigured() ? inviteLoader : undefined,
     inMeeting: MEETING_FRAMES.includes(teams.frameContext ?? ""),
     view: teams.frameContext === "meetingStage" ? "stage" : "panel",

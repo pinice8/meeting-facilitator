@@ -83,5 +83,11 @@ button.seg-button:focus-visible { outline: 2px solid var(--brand); outline-offse
 .footer { margin-top: 24px; font-size: 11px; color: var(--muted); }
 
 .who { color: var(--muted); font-weight: 400; }
-.who-input { width: 100%; min-width: 120px; }
-.title-input { width: 100%; min-width: 100px; }
+.cell-stack { display: flex; flex-direction: column; gap: 4px; }
+.who-input, .title-input { width: 100%; min-width: 100px; }
+.who-input { font-size: 12px; }
+.row-actions { white-space: nowrap; }
+.row-actions button { padding: 2px 8px; min-width: 0; }
+.paste { margin: 12px 0; }
+.paste summary { cursor: pointer; color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

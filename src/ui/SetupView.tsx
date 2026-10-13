@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { SessionStore } from "../store/SessionStore";
 import { useSession } from "../store/hooks";
 import { parseAgenda } from "../core/parser";
 import { planAgenda } from "../core/planner";
-import { itemsToText, setMinutesInText, setParticipantsInText, setTitleInText } from "../core/agendaText";
+import { blankRows, itemsToRows, moveRow, parsedToRows, rowsToParsed, type Row } from "../core/rows";
 import { setAgenda, startSession } from "../core/timer";
 
 export interface InviteResult {
@@ -18,16 +18,33 @@ interface Props {
   inMeeting?: boolean;
 }
 
+const START_ROWS = 3;
+
 export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
   const saved = useSession(store);
-  const [text, setText] = useState(() => itemsToText(saved.items));
+  const keys = useRef(0);
+  const nextKey = () => ++keys.current;
+
+  const [rows, setRows] = useState<Row[]>(() =>
+    saved.items.length > 0 ? itemsToRows(saved.items, nextKey) : blankRows(START_ROWS, nextKey),
+  );
   const [total, setTotal] = useState(saved.totalMinutes);
+  const [pasted, setPasted] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [justSaved, setJustSaved] = useState(false);
+  const [focusKey, setFocusKey] = useState<number>();
 
-  const plan = useMemo(() => planAgenda(parseAgenda(text), total), [text, total]);
+  const plan = useMemo(() => planAgenda(rowsToParsed(rows), total), [rows, total]);
   const canStart = plan.items.length > 0 && plan.overByMinutes === 0 && total > 0;
+
+  // What the planner decided for each named row, so rows without minutes can show their share.
+  const plannedMinutes = useMemo(() => {
+    const byKey = new Map<number, number>();
+    let index = 0;
+    for (const row of rows) if (row.title.trim() !== "") byKey.set(row.key, plan.items[index++]?.minutes ?? 0);
+    return byKey;
+  }, [rows, plan]);
 
   if (!store.canControl) {
     return (
@@ -55,9 +72,25 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
     );
   }
 
-  const edit = (next: string) => {
-    setText(next);
+  const change = (update: (current: Row[]) => Row[]) => {
+    setRows(update);
     setJustSaved(false);
+  };
+  const patch = (key: number, changes: Partial<Row>) =>
+    change((current) => current.map((row) => (row.key === key ? { ...row, ...changes } : row)));
+
+  const addRow = () => {
+    const key = nextKey();
+    setFocusKey(key);
+    change((current) => [...current, { key, title: "", participants: "" }]);
+  };
+
+  const replaceWithText = (text: string, minutes?: number) => {
+    const parsed = parseAgenda(text);
+    if (parsed.length === 0) return;
+    change(() => parsedToRows(parsed, nextKey));
+    if (minutes) setTotal(minutes);
+    setPasted("");
   };
 
   const onLoadInvite = async () => {
@@ -66,11 +99,10 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
     setError(undefined);
     try {
       const result = await loadInvite();
-      if (!result.agenda.trim()) throw new Error("The invite has no agenda text. Paste it below instead.");
-      edit(result.agenda);
-      if (result.totalMinutes) setTotal(result.totalMinutes);
+      if (parseAgenda(result.agenda).length === 0) throw new Error("The invite has no agenda text");
+      replaceWithText(result.agenda, result.totalMinutes);
     } catch (e) {
-      setError(`${e instanceof Error ? e.message : String(e)}. You can paste the agenda instead.`);
+      setError(`${e instanceof Error ? e.message : String(e)}. You can add the items below instead.`);
     } finally {
       setLoading(false);
     }
@@ -80,16 +112,11 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
     store.update((s) => setAgenda(s, plan.items, total));
     setJustSaved(true);
   };
-
   const start = () => store.update((s, now) => startSession(setAgenda(s, plan.items, total), now));
 
   return (
     <section>
       <h2>Agenda</h2>
-      <label className="field">
-        <span>One item per line. Add minutes like “Demo - 10” or “Demo (10 min)”.</span>
-        <textarea value={text} rows={6} onChange={(e) => edit(e.target.value)} placeholder={"Intro - 5\nDemo\nQ&A"} />
-      </label>
 
       <div className="row">
         <label className="inline">
@@ -106,67 +133,79 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
           />
           min
         </label>
-        {loadInvite ? (
+        {loadInvite && (
           <button type="button" onClick={onLoadInvite} disabled={loading}>
             {loading ? "Loading…" : "Load from invite"}
           </button>
-        ) : (
-          <span className="muted">Paste your agenda (reading the invite isn’t set up).</span>
         )}
       </div>
       {error && <p className="error" role="alert">{error}</p>}
 
-      {plan.items.length > 0 && (
-        <table className="plan">
-          <thead>
-            <tr><th>#</th><th>Item</th><th>Minutes</th><th>Participants</th></tr>
-          </thead>
-          <tbody>
-            {plan.items.map((item, i) => (
-              <tr key={item.id}>
-                <td>{i + 1}</td>
-                <td>
+      <table className="plan">
+        <thead>
+          <tr><th>#</th><th>Item</th><th>Min</th><th><span className="sr-only">Actions</span></th></tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={row.key}>
+              <td>{i + 1}</td>
+              <td>
+                <div className="cell-stack">
                   <input
-                    key={`${item.id}:${item.title}`}
                     className="title-input"
                     aria-label={`Name of item ${i + 1}`}
-                    defaultValue={item.title}
-                    onBlur={(e) => {
-                      if (!e.target.value.trim()) e.target.value = item.title; // a name can't be empty
-                      else if (e.target.value !== item.title) edit(setTitleInText(text, i, e.target.value));
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    placeholder="Item name"
+                    value={row.title}
+                    autoFocus={row.key === focusKey}
+                    onChange={(e) => patch(row.key, { title: e.target.value })}
                   />
-                </td>
-                <td>
                   <input
-                    aria-label={`Minutes for ${item.title}`}
-                    type="number"
-                    min={1}
-                    max={240}
-                    value={item.minutes}
-                    onChange={(e) => edit(setMinutesInText(text, i, Math.max(1, Number(e.target.value) || 1)))}
-                  />
-                </td>
-                <td>
-                  {/* Uncontrolled + commit on blur/Enter: rewriting the text on every keystroke would eat the commas being typed. */}
-                  <input
-                    key={`${item.id}:${item.participants?.join(", ") ?? ""}`}
                     className="who-input"
-                    aria-label={`Participants for ${item.title}`}
-                    placeholder="Alice, Bob"
-                    defaultValue={item.participants?.join(", ") ?? ""}
-                    onBlur={(e) => {
-                      if (e.target.value !== (item.participants?.join(", ") ?? "")) edit(setParticipantsInText(text, i, e.target.value));
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    aria-label={`Participants for item ${i + 1}`}
+                    placeholder="Participants (optional)"
+                    value={row.participants}
+                    onChange={(e) => patch(row.key, { participants: e.target.value })}
                   />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                </div>
+              </td>
+              <td>
+                <input
+                  type="number"
+                  min={1}
+                  max={240}
+                  aria-label={`Minutes for item ${i + 1}`}
+                  placeholder={plannedMinutes.has(row.key) ? String(plannedMinutes.get(row.key)) : ""}
+                  value={row.minutes ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    patch(row.key, { minutes: raw === "" ? undefined : Math.min(240, Math.max(1, Math.round(Number(raw)))) });
+                  }}
+                />
+              </td>
+              <td className="row-actions">
+                <button type="button" aria-label={`Move item ${i + 1} up`} disabled={i === 0} onClick={() => change((c) => moveRow(c, i, -1))}>↑</button>
+                <button type="button" aria-label={`Move item ${i + 1} down`} disabled={i === rows.length - 1} onClick={() => change((c) => moveRow(c, i, 1))}>↓</button>
+                <button type="button" aria-label={`Remove item ${i + 1}`} onClick={() => change((c) => c.filter((r) => r.key !== row.key))}>✕</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="row">
+        <button type="button" onClick={addRow}>+ Add item</button>
+        <span className="muted">Leave minutes empty to share the remaining time.</span>
+      </div>
+
+      <details className="paste">
+        <summary>Paste a whole agenda instead</summary>
+        <p className="muted">One item per line. Add minutes like “Demo - 10” or “Demo (10 min)”, and participants after a bar: “Demo - 10 | Alice, Bob”.</p>
+        <textarea value={pasted} rows={5} onChange={(e) => setPasted(e.target.value)} placeholder={"Intro - 5\nDemo | Alice\nQ&A"} />
+        <div className="row">
+          <button type="button" onClick={() => replaceWithText(pasted)} disabled={parseAgenda(pasted).length === 0}>
+            Replace the items above
+          </button>
+        </div>
+      </details>
 
       {plan.overByMinutes > 0 && (
         <p className="error" role="alert">The plan is {plan.overByMinutes} min over the meeting length. Shorten an item or extend the meeting.</p>

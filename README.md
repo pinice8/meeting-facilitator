@@ -7,8 +7,9 @@ meeting is ahead or behind; organizers and presenters move between items.
 - **Static app, no backend.** Hosted on GitHub Pages. Everyone's view is synced through
   [Live Share](https://learn.microsoft.com/microsoftteams/platform/apps-in-teams-meetings/teams-live-share-overview)
   (Microsoft-hosted, data kept up to 24 h).
-- **Agenda input:** paste text (`Demo - 10`, `Demo (10 min)`, …) or **Load from invite** (reads the
-  calendar event through Microsoft Graph; needs the Entra setup below).
+- **Agenda input:** build it in a table (name, optional participants, optional minutes; add, remove and
+  reorder rows), or paste a whole agenda as text (`Demo - 10 | Alice`, `Demo (10 min)`, …), or **Load from
+  invite** (reads the calendar event through Microsoft Graph; needs the Entra setup below).
 - **Participants per item.** Add `| Alice, Bob` to an agenda line (or use the table's Participants
   column). They are shown next to the item as a note (who is presenting or involved); nobody is
   notified. (Tagging them in the meeting chat was tried and dropped: it needs an Entra app registration.)

@@ -13,7 +13,8 @@ function validMinutes(raw: string): number | undefined {
   return Number.isInteger(n) && n >= 1 && n <= MAX_MINUTES ? n : undefined;
 }
 
-function parseParticipants(text: string): string[] {
+/** "Alice, @Bob; carol@x.com" → ["Alice", "Bob", "carol@x.com"]. */
+export function splitNames(text: string): string[] {
   return text
     .split(/[,;]/)
     .map((name) => name.trim().replace(/^@/, ""))
@@ -25,7 +26,7 @@ function parseLine(rawLine: string): ParsedItem | undefined {
   const stripped = rawLine.replace(BULLET, "").trim();
   const split = stripped.match(/^(.*?)\s*\|\s*(.*)$/);
   const main = split ? split[1].trim() : stripped;
-  const participants = split ? parseParticipants(split[2]) : [];
+  const participants = split ? splitNames(split[2]) : [];
   const item = parseTitleAndMinutes(main);
   if (!item) return undefined;
   return participants.length > 0 ? { ...item, participants } : item;

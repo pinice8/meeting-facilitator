@@ -51,7 +51,7 @@ export function App({ store, loadInvite, inMeeting = false, view = "panel", onSh
         {live && <RunningView store={store} onShareToStage={onShareToStage} />}
         {session.status === "done" && <DoneView store={store} />}
         <footer className="footer">
-          v{__APP_VERSION__} · build {__BUILD_ID__} · {frameContext ?? "local"} · {store.canControl ? "facilitator" : "view only"}
+          v{__APP_VERSION__} · build {__BUILD_ID__} · {frameContext ?? "local"} · {store.canControl ? "facilitator" : "view only"} · chat {chatOptions?.chatId ? "id ok" : "id missing"}
           {diagnostics && (
             <>
               <br />

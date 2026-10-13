@@ -88,21 +88,25 @@ Without this the button is hidden and you paste the agenda instead.
 
 ## Post the agenda to the meeting chat (Power Automate recipe)
 
-Do this once, in https://make.powerautomate.com (or the Workflows app in Teams):
+Use the **Teams webhook** trigger, not "When an HTTP request is received": the HTTP trigger is a *premium*
+Power Automate trigger, while Microsoft states the Teams webhook trigger needs no premium license.
+Do this once, in https://make.powerautomate.com:
 
-1. **Create → Instant cloud flow**, trigger **When an HTTP request is received**, *Who can trigger the flow*: **Anyone**. Leave the request body schema empty.
-2. **New step → Compose**, rename it `Payload`, with the expression `json(string(triggerBody()))`.
-3. **New step → Microsoft Teams → Post message in a chat or channel**:
-   - *Post as*: **User**; *Post in*: **Group chat**;
-   - *Group chat*: choose **Enter custom value** and use the expression `outputs('Payload')?['chatId']`;
+1. **Create → Instant cloud flow**, give it a name, click **Skip** (no trigger yet).
+2. **Add a trigger → Microsoft Teams → When a Teams webhook request is received**. Set *Who can trigger the flow* to **Anyone**.
+3. **Add an action → Compose**, rename it `Payload`, with the expression `json(string(triggerBody()))`.
+4. **Add an action → Microsoft Teams → Post message in a chat or channel** (not "Post card"):
+   - *Post as*: **User** (use Flow bot only if User is not offered); *Post in*: **Group chat**;
+   - *Group chat*: choose **Enter custom value**, then the expression `outputs('Payload')?['chatId']`;
    - *Message*: the expression `outputs('Payload')?['message']`.
-4. *(Optional, lets the app show "Posted")* **New step → Response**, status `200`, with header `Access-Control-Allow-Origin` = `*`. Without it the app says "sent, it didn't confirm".
 5. Save the flow, copy the **HTTP POST URL** from the trigger, and paste it into the app (*Share the agenda in the meeting chat → Flow URL*). Tick the checkbox to post on every save.
 
 The app sends `{ chatId, message (HTML), text, totalMinutes, items[] }` as text/plain (no CORS preflight).
+This trigger does not answer in a way the browser can read, so the app says "sent, it didn't confirm";
+check the chat, and the flow's **Run history** in Power Automate shows what happened (and any error).
+The footer's "chat id ok/missing" tells you whether Teams gave the app the meeting chat's id.
 Treat the URL like a password: anyone who has it can make your flow post, so never commit it.
-The message is posted as you (the flow owner's Teams connection). Your tenant may restrict the
-"Anyone" HTTP trigger or the Teams connector; if posting fails, the app shows the HTTP status.
+The message is posted as you. Your tenant may restrict "Anyone" triggers or the Teams connector.
 
 ## Checks that only a real meeting can prove
 

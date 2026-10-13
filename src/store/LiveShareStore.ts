@@ -54,9 +54,9 @@ export class LiveShareStore implements SessionStore {
   getState = () => this.state;
   lastActiveAt = () => this.map.get<number>(HEARTBEAT_KEY);
 
-  async othersInMeeting(): Promise<boolean> {
+  async othersInMeeting(waitForPresence = true): Promise<boolean> {
     if (!this.presence) return false; // fall back to the heartbeat alone
-    await sleep(PRESENCE_SETTLE_MS);
+    if (waitForPresence) await sleep(PRESENCE_SETTLE_MS);
     return this.presence
       .getUsers(PresenceState.online)
       .some((user) => !user.isLocalUser && user.getConnections(PresenceState.online).some((c) => c.data?.inMeeting));

@@ -5,10 +5,10 @@ import type { SessionState } from "./types";
 export const HEARTBEAT_MS = 10_000;
 /**
  * A heartbeat older than this means no facilitator panel was open for a while. Three missed
- * beats: long enough to ride out a panel reload, short enough that ending the meeting and
+ * beats and a bit: long enough to ride out a panel reload, short enough that ending the meeting and
  * starting it again counts as a new run.
  */
-export const RUN_STALE_MS = 30_000;
+export const RUN_STALE_MS = 45_000;
 
 export type LifecycleAction = "none" | "start" | "restart" | "reset";
 

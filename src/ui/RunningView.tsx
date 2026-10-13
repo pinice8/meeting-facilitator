@@ -20,13 +20,11 @@ import {
 interface Props {
   store: SessionStore;
   onShareToStage?: () => Promise<void>;
-  onPopOut?: () => Promise<void>;
 }
 
-export function RunningView({ store, onShareToStage, onPopOut }: Props) {
+export function RunningView({ store, onShareToStage }: Props) {
   const state = useSession(store);
   const [shareMessage, setShareMessage] = useState<string>();
-  const [popOutMessage, setPopOutMessage] = useState<string>();
   const now = useNow(store);
   const item = state.items[state.currentIndex];
   if (!item) return null;
@@ -61,24 +59,6 @@ export function RunningView({ store, onShareToStage, onPopOut }: Props) {
           <button type="button" onClick={() => store.update(rebalance)} disabled={isLast} title="Redistribute the remaining time across the remaining items">Rebalance</button>
           <button type="button" onClick={() => store.update(finishSession)}>End meeting</button>
           <button type="button" onClick={() => store.update((s, now) => applyLifecycle(s, "restart", now))} title="Start the agenda again from item 1">Restart</button>
-        </div>
-      )}
-      {onPopOut && (
-        <div className="row">
-          <button
-            type="button"
-            onClick={() => {
-              setPopOutMessage(undefined);
-              onPopOut().then(
-                () => setPopOutMessage("Floating strip opened — drag it to the top of your screen."),
-                (e: Error) => setPopOutMessage(`Couldn’t open the strip: ${e.message}.`),
-              );
-            }}
-            title="Open the bar in a small always-on-top window (only for you)"
-          >
-            Pop out strip
-          </button>
-          {popOutMessage && <span className="muted" role="status">{popOutMessage}</span>}
         </div>
       )}
       {onShareToStage && (

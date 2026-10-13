@@ -18,7 +18,7 @@ export interface SessionStore {
   getState(): SessionState;
   subscribe(listener: () => void): () => void;
   /** Whether another participant currently has the app open inside the meeting (waits briefly for presence to arrive). */
-  othersInMeeting(): Promise<boolean>;
+  othersInMeeting(waitForPresence?: boolean): Promise<boolean>;
   /** Synchronized time of the last facilitator heartbeat (undefined if none yet). */
   lastActiveAt(): number | undefined;
   /** Records "a facilitator is here now". No-op for read-only users. */

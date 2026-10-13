@@ -11,6 +11,7 @@ import { fetchInvite } from "./graph/invite";
 import { extractAgendaFromInvite } from "./core/invite";
 import type { InviteLoader } from "./ui/SetupView";
 import { emptySession } from "./core/types";
+import { startSession } from "./core/timer";
 import { parseAgenda } from "./core/parser";
 import { planAgenda } from "./core/planner";
 
@@ -49,16 +50,18 @@ const message = (text: string) => root.render(<main className="app"><p>{text}</p
  * Local try-out outside Teams: ?harness=1 [&role=attendee] [&speed=60] [&meeting=1]
  * [&agenda=Intro - 2|Demo|Q&A - 1] [&total=6] [&stage=1] [&share=1]
  * speed N makes time run N times faster; meeting=1 behaves like the in-meeting panel (auto-start);
- * stage=1 shows the meeting-stage view; share=1 shows the "Show on stage" button (does nothing).
+ * stage=1 shows the meeting-stage view; share=1 shows the "Show on stage" button (does nothing);
+ * stale=1 loads the agenda as a run left over from a meeting that ended 30 minutes ago.
  */
 function startHarness(params: URLSearchParams) {
   const speed = Number(params.get("speed")) || 1;
   const t0 = Date.now();
   const agenda = params.get("agenda");
   const total = Number(params.get("total")) || 30;
-  const initial = agenda
+  const saved = agenda
     ? { ...emptySession(total), items: planAgenda(parseAgenda(agenda.split("|").join("\n")), total).items }
     : undefined;
+  const initial = saved && params.get("stale") === "1" ? startSession(saved, t0 - 30 * 60_000) : saved;
   render(
     new MemoryStore({
       canControl: params.get("role") !== "attendee",

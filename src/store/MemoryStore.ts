@@ -33,7 +33,7 @@ export class MemoryStore implements SessionStore {
   now = () => this.clock();
   getState = () => this.state;
   lastActiveAt = () => this.active;
-  othersInMeeting = () => Promise.resolve(this.others);
+  othersInMeeting = (_waitForPresence?: boolean) => Promise.resolve(this.others);
 
   heartbeat(): void {
     if (this.canControl) this.active = this.now();

@@ -44,7 +44,7 @@ describe("lifecycleAction in the meeting", () => {
   });
 
   it("restarts even a short gap, as long as it is longer than a reload", () => {
-    expect(lifecycleAction(running(), ctx({ lastActiveAt: NOW - 45_000 }))).toBe("restart");
+    expect(lifecycleAction(running(), ctx({ lastActiveAt: NOW - 50_000 }))).toBe("restart");
   });
 
   it("restarts a finished run nobody is around for", () => {

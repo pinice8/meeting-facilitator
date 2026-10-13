@@ -5,6 +5,8 @@ import { parseAgenda } from "../core/parser";
 import { planAgenda } from "../core/planner";
 import { blankRows, itemsToRows, moveRow, parsedToRows, rowsToParsed, type Row } from "../core/rows";
 import { setAgenda, startSession } from "../core/timer";
+import { ChatSection, ChatStatusLine } from "./ChatSection";
+import type { AgendaChat } from "./useAgendaChat";
 
 export interface InviteResult {
   agenda: string;
@@ -16,11 +18,13 @@ interface Props {
   store: SessionStore;
   loadInvite?: InviteLoader;
   inMeeting?: boolean;
+  /** Posting the agenda to the meeting chat (copy button and Power Automate flow). */
+  chat?: AgendaChat;
 }
 
 const START_ROWS = 3;
 
-export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
+export function SetupView({ store, loadInvite, inMeeting = false, chat }: Props) {
   const saved = useSession(store);
   const keys = useRef(0);
   const nextKey = () => ++keys.current;
@@ -111,8 +115,12 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
   const save = () => {
     store.update((s) => setAgenda(s, plan.items, total));
     setJustSaved(true);
+    void chat?.postIfEnabled(plan.items, total);
   };
-  const start = () => store.update((s, now) => startSession(setAgenda(s, plan.items, total), now));
+  const start = () => {
+    store.update((s, now) => startSession(setAgenda(s, plan.items, total), now));
+    void chat?.postIfEnabled(plan.items, total);
+  };
 
   return (
     <section>
@@ -196,6 +204,8 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
         <span className="muted">Leave minutes empty to share the remaining time.</span>
       </div>
 
+      {chat && <ChatSection chat={chat} items={plan.items} totalMinutes={total} />}
+
       <details className="paste">
         <summary>Paste a whole agenda instead</summary>
         <p className="muted">One item per line. Add minutes like “Demo - 10” or “Demo (10 min)”, and participants after a bar: “Demo - 10 | Alice, Bob”.</p>
@@ -221,6 +231,7 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
         </button>
         {justSaved && <span className="muted">Saved — everyone in the meeting can see it.</span>}
       </div>
+      {chat && <ChatStatusLine chat={chat} />}
       {!inMeeting && (
         <p className="muted">Once saved, the session starts by itself when you open this app inside the meeting.</p>
       )}

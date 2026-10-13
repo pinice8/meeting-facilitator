@@ -6,6 +6,7 @@ import { DoneView } from "./DoneView";
 import { AgendaBar } from "./AgendaBar";
 import { StageView } from "./StageView";
 import { useLifecycle } from "./useLifecycle";
+import { useAgendaChat, type ChatOptions } from "./useAgendaChat";
 
 interface Props {
   store: SessionStore;
@@ -18,11 +19,14 @@ interface Props {
   view?: "panel" | "stage";
   /** Present only when the local user may share the app to the meeting stage. */
   onShareToStage?: () => Promise<void>;
+  /** Where and how the agenda is posted to the meeting chat. */
+  chatOptions?: ChatOptions;
 }
 
-export function App({ store, loadInvite, inMeeting = false, view = "panel", onShareToStage, frameContext }: Props) {
+export function App({ store, loadInvite, inMeeting = false, view = "panel", onShareToStage, frameContext, chatOptions }: Props) {
   const session = useSession(store);
   const { diagnostics, restart, undo, dismiss } = useLifecycle(store, inMeeting);
+  const chat = useAgendaChat(chatOptions);
 
   const live = session.status === "running" || session.status === "paused";
 
@@ -43,7 +47,7 @@ export function App({ store, loadInvite, inMeeting = false, view = "panel", onSh
             <button type="button" onClick={undo}>Undo</button> <button type="button" onClick={dismiss}>Dismiss</button>
           </p>
         )}
-        {session.status === "setup" && <SetupView store={store} loadInvite={loadInvite} inMeeting={inMeeting} />}
+        {session.status === "setup" && <SetupView store={store} loadInvite={loadInvite} inMeeting={inMeeting} chat={chat} />}
         {live && <RunningView store={store} onShareToStage={onShareToStage} />}
         {session.status === "done" && <DoneView store={store} />}
         <footer className="footer">

@@ -10,6 +10,7 @@ import { CALENDAR_SCOPES, getGraphToken, isGraphConfigured } from "./graph/auth"
 import { fetchInvite } from "./graph/invite";
 import { extractAgendaFromInvite } from "./core/invite";
 import type { InviteLoader } from "./ui/SetupView";
+import type { ChatOptions } from "./ui/useAgendaChat";
 import { emptySession } from "./core/types";
 import { startSession } from "./core/timer";
 import { parseAgenda } from "./core/parser";
@@ -40,6 +41,7 @@ interface RenderOptions {
   view?: "panel" | "stage";
   onShareToStage?: () => Promise<void>;
   frameContext?: string;
+  chatOptions?: ChatOptions;
 }
 const render = (store: SessionStore, options: RenderOptions = {}) =>
   root.render(<StrictMode><App store={store} {...options} /></StrictMode>);
@@ -51,7 +53,7 @@ const message = (text: string) => root.render(<main className="app"><p>{text}</p
  * [&agenda=Intro - 2~Demo | Alice~Q&A - 1] [&total=6] [&stage=1] [&share=1]
  * speed N makes time run N times faster; meeting=1 behaves like the in-meeting panel (auto-start);
  * stage=1 shows the meeting-stage view; share=1 shows the "Show on stage" button (does nothing);
- * stale=1 loads the agenda as a run left over from a meeting that ended 30 minutes ago.
+ * fakeflow=1 makes a saved flow URL (any https:// value) answer OK; stale=1 loads the agenda as a run left over from a meeting that ended 30 minutes ago.
  */
 function startHarness(params: URLSearchParams) {
   const speed = Number(params.get("speed")) || 1;
@@ -72,6 +74,8 @@ function startHarness(params: URLSearchParams) {
     inMeeting: params.get("meeting") === "1" || params.get("stage") === "1",
     view: params.get("stage") === "1" ? "stage" : "panel",
     onShareToStage: params.get("share") === "1" ? () => Promise.resolve() : undefined,
+    // fakeflow=1 stands in for the user's flow: it answers OK to anything.
+    chatOptions: { chatId: "harness-chat", fetchFn: params.get("fakeflow") === "1" ? async () => new Response("ok") : undefined },
   });
 }
 
@@ -112,6 +116,7 @@ async function start() {
     view: teams.frameContext === "meetingStage" ? "stage" : "panel",
     onShareToStage: mayShare ? () => shareToStage(stageUrl) : undefined,
     frameContext: teams.frameContext,
+    chatOptions: { chatId: teams.chatId },
   });
   markLoaded();
 }

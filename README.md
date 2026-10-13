@@ -13,6 +13,11 @@ meeting is ahead or behind; organizers and presenters move between items.
 - **Participants per item.** Add `| Alice, Bob` to an agenda line (or use the table's Participants
   column). They are shown next to the item as a note (who is presenting or involved); nobody is
   notified. (Tagging them in the meeting chat was tried and dropped: it needs an Entra app registration.)
+- **Agenda in the meeting chat.** "Share the agenda in the meeting chat" (setup screen) has a **Copy
+  agenda** button and an automatic option: paste your own Power Automate flow's URL once (kept only in
+  this browser) and tick *Post the agenda to the meeting chat when I save*; Save (or Start now) then
+  posts it, once per changed agenda. Teams gives tab apps no way to post messages themselves, so the
+  flow does the posting. See the recipe below.
 - **Time split:** items with minutes keep them; the rest of the meeting is divided evenly across the
   others. Over-long plans are flagged, never silently rescaled.
 - **Starts by itself.** Save the agenda before the meeting (chat tab → *Save agenda*). When an
@@ -81,6 +86,24 @@ a scheduled meeting's chat click **+**, choose *Meeting Facilitator*, and **Save
 
 Without this the button is hidden and you paste the agenda instead.
 
+## Post the agenda to the meeting chat (Power Automate recipe)
+
+Do this once, in https://make.powerautomate.com (or the Workflows app in Teams):
+
+1. **Create → Instant cloud flow**, trigger **When an HTTP request is received**, *Who can trigger the flow*: **Anyone**. Leave the request body schema empty.
+2. **New step → Compose**, rename it `Payload`, with the expression `json(string(triggerBody()))`.
+3. **New step → Microsoft Teams → Post message in a chat or channel**:
+   - *Post as*: **User**; *Post in*: **Group chat**;
+   - *Group chat*: choose **Enter custom value** and use the expression `outputs('Payload')?['chatId']`;
+   - *Message*: the expression `outputs('Payload')?['message']`.
+4. *(Optional, lets the app show "Posted")* **New step → Response**, status `200`, with header `Access-Control-Allow-Origin` = `*`. Without it the app says "sent, it didn't confirm".
+5. Save the flow, copy the **HTTP POST URL** from the trigger, and paste it into the app (*Share the agenda in the meeting chat → Flow URL*). Tick the checkbox to post on every save.
+
+The app sends `{ chatId, message (HTML), text, totalMinutes, items[] }` as text/plain (no CORS preflight).
+Treat the URL like a password: anyone who has it can make your flow post, so never commit it.
+The message is posted as you (the flow owner's Teams connection). Your tenant may restrict the
+"Anyone" HTTP trigger or the Teams connector; if posting fails, the app shows the HTTP status.
+
 ## Checks that only a real meeting can prove
 
 - [ ] App installs and the config page's **Save** creates the tab (manifest + RSC permissions accepted).
@@ -91,6 +114,7 @@ Without this the button is hidden and you paste the agenda instead.
 - [ ] Meeting side panel during the live meeting.
 - [ ] End the meeting for everyone, start it again: the agenda restarts from item 1.
 - [ ] **Show on stage** puts the big view on the stage for everyone (needs the v1.1.0 package).
+- [ ] **Agenda in chat**: *Copy agenda* works (or the text can be selected by hand); with a flow URL set, Save posts the agenda to the meeting chat once, and Save again with no change posts nothing.
 - [ ] **Load from invite**: sign-in popup, event found, agenda and length filled in.
 
 ## Known limits

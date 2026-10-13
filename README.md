@@ -32,7 +32,7 @@ meeting is ahead or behind; organizers and presenters move between items.
 - **Meeting stage.** An organizer/presenter clicks **Show on stage** in the side panel; everyone then
   sees a full-width read-only view (big bar across the top, huge countdown, what is next). Needs the
   manifest's `meetingStage` context (v1.1.0+).
-- **During the meeting:** Previous / Pause / Next / End / Restart. Overrun goes red and counts
+- **During the meeting:** Previous / Pause / Next / End session / Restart. Overrun goes red and counts
   up; it never auto-advances.
 
 ## Layout

@@ -14,7 +14,7 @@ export function DoneView({ store, showControls = true }: { store: SessionStore; 
 
   return (
     <section>
-      <h2>Meeting finished</h2>
+      <h2>Session finished</h2>
       <table className="plan">
         <thead>
           <tr><th>Item</th><th>Planned</th><th>Actual</th><th>Difference</th></tr>

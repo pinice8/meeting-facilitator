@@ -55,7 +55,7 @@ export function RunningView({ store, onShareToStage }: Props) {
             <button type="button" onClick={() => store.update(pauseSession)}>Pause</button>
           )}
           <button type="button" className="primary" onClick={() => store.update(nextItem)}>{isLast ? "Finish" : "Next"}</button>
-          <button type="button" onClick={() => store.update(finishSession)}>End meeting</button>
+          <button type="button" onClick={() => store.update(finishSession)}>End session</button>
           <button type="button" onClick={() => store.update((s, now) => applyLifecycle(s, "restart", now))} title="Start the agenda again from item 1">Restart</button>
         </div>
       )}

@@ -20,7 +20,7 @@ export function StageView({ store }: { store: SessionStore }) {
     return (
       <main className="app stage">
         <h1>Meeting Facilitator</h1>
-        <p className="muted">Waiting for the meeting to start…</p>
+        <p className="muted">Waiting for the session to start…</p>
       </main>
     );
   }

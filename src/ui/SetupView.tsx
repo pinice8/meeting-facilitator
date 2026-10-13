@@ -217,12 +217,12 @@ export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
       <div className="row">
         <button type="button" onClick={save} disabled={!canStart}>Save agenda</button>
         <button type="button" className={inMeeting ? "primary" : ""} onClick={start} disabled={!canStart}>
-          {inMeeting ? "Start meeting" : "Start now"}
+          {inMeeting ? "Start session" : "Start now"}
         </button>
         {justSaved && <span className="muted">Saved — everyone in the meeting can see it.</span>}
       </div>
       {!inMeeting && (
-        <p className="muted">Once saved, the meeting starts by itself when you open this app inside the meeting.</p>
+        <p className="muted">Once saved, the session starts by itself when you open this app inside the meeting.</p>
       )}
     </section>
   );

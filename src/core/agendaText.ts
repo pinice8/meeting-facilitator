@@ -30,3 +30,12 @@ export function setParticipantsInText(text: string, index: number, participants:
   parsed[index] = names.length > 0 ? { ...rest, participants: names } : rest;
   return parsed.map(lineOf).join("\n");
 }
+
+/** Renames the item at `index`. An empty name is ignored; a pipe would start the participants part, so it becomes a slash. */
+export function setTitleInText(text: string, index: number, title: string): string {
+  const parsed = parseAgenda(text);
+  const clean = title.replace(/\s*\|\s*/g, " / ").trim();
+  if (index < 0 || index >= parsed.length || !clean) return text;
+  parsed[index] = { ...parsed[index], title: clean };
+  return parsed.map(lineOf).join("\n");
+}

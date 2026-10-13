@@ -3,7 +3,7 @@ export interface AgendaItem {
   title: string;
   /** Planned minutes for this item. */
   minutes: number;
-  /** People to tag in the meeting chat when this item starts (names or emails). */
+  /** Who is presenting or involved in this item (a note shown with the item). */
   participants?: string[];
 }
 
@@ -21,8 +21,6 @@ export interface SessionState {
   elapsedMs: number[];
   /** Synchronized timestamp at which the current item's clock last resumed; null while not running. */
   runningSince: number | null;
-  /** Ids of items whose participants were already notified in this run (never ping twice). */
-  announced: string[];
 }
 
 export function emptySession(totalMinutes = 30): SessionState {
@@ -34,6 +32,5 @@ export function emptySession(totalMinutes = 30): SessionState {
     currentIndex: 0,
     elapsedMs: [],
     runningSince: null,
-    announced: [],
   };
 }

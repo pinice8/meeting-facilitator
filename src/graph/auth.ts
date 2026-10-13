@@ -3,8 +3,6 @@ import type { Configuration } from "@azure/msal-browser";
 
 /** Reading the invite. */
 export const CALENDAR_SCOPES = ["Calendars.Read"];
-/** Reading the meeting chat's members and posting to it as the user. */
-export const CHAT_SCOPES = ["ChatMember.Read", "ChatMessage.Send"];
 
 const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID as string | undefined;
 const tenant = (import.meta.env.VITE_ENTRA_TENANT as string | undefined) || "organizations";
@@ -30,8 +28,7 @@ const cache = new Map<string, CachedToken>();
 
 /**
  * Opens the Teams sign-in popup (auth-start.html → Microsoft sign-in → auth-end.html) and returns a
- * Graph token for the scopes. Scopes are requested separately per feature, so a tenant that blocks
- * chat permissions does not also break reading the invite.
+ * Graph token for the scopes.
  */
 export async function getGraphToken(scopes: string[]): Promise<string> {
   const key = scopes.join(" ");

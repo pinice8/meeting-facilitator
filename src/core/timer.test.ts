@@ -13,8 +13,6 @@ import {
   resumeSession,
   scheduleDeltaMs,
   setAgenda,
-  markAnnounced,
-  pendingAnnouncement,
   startSession,
   totalElapsedMs,
 } from "./timer";
@@ -190,42 +188,5 @@ describe("setAgenda", () => {
     expect(saved.totalMinutes).toBe(20);
     const running = startSession(saved, T0);
     expect(setAgenda(running, [], 5)).toBe(running);
-  });
-});
-
-describe("announcements", () => {
-  const withWho = (): SessionState => ({
-    ...agenda([10, 10]),
-    items: [
-      { id: "item-1", title: "A", minutes: 10, participants: ["Alice"] },
-      { id: "item-2", title: "B", minutes: 10 },
-    ],
-  });
-
-  it("is pending for a running item with participants that was not announced yet", () => {
-    const s = startSession(withWho(), T0);
-    expect(pendingAnnouncement(s)?.id).toBe("item-1");
-  });
-
-  it("is not pending once announced, while paused, in setup, or for items without participants", () => {
-    const s = startSession(withWho(), T0);
-    expect(pendingAnnouncement(markAnnounced(s, "item-1"))).toBeUndefined();
-    expect(pendingAnnouncement(pauseSession(s, T0 + 1))).toBeUndefined();
-    expect(pendingAnnouncement(withWho())).toBeUndefined();
-    expect(pendingAnnouncement(nextItem(markAnnounced(s, "item-1"), T0 + 1))).toBeUndefined();
-  });
-
-  it("a new run starts with nothing announced", () => {
-    const first = markAnnounced(startSession(withWho(), T0), "item-1");
-    expect(first.announced).toEqual(["item-1"]);
-    expect(resetSession(first).announced).toEqual([]);
-    expect(setAgenda(resetSession(first), first.items, 20).announced).toEqual([]);
-  });
-
-  it("tolerates a state saved before the announced list existed", () => {
-    const old = { ...startSession(withWho(), T0) } as Partial<SessionState> as SessionState;
-    delete (old as Partial<SessionState>).announced;
-    expect(pendingAnnouncement(old)?.id).toBe("item-1");
-    expect(markAnnounced(old, "item-1").announced).toEqual(["item-1"]);
   });
 });

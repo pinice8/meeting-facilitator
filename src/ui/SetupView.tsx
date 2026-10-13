@@ -3,7 +3,7 @@ import type { SessionStore } from "../store/SessionStore";
 import { useSession } from "../store/hooks";
 import { parseAgenda } from "../core/parser";
 import { planAgenda } from "../core/planner";
-import { itemsToText, setMinutesInText, setParticipantsInText } from "../core/agendaText";
+import { itemsToText, setMinutesInText, setParticipantsInText, setTitleInText } from "../core/agendaText";
 import { setAgenda, startSession } from "../core/timer";
 
 export interface InviteResult {
@@ -16,11 +16,9 @@ interface Props {
   store: SessionStore;
   loadInvite?: InviteLoader;
   inMeeting?: boolean;
-  /** Participants get tagged in the meeting chat when their item starts. */
-  canNotify?: boolean;
 }
 
-export function SetupView({ store, loadInvite, inMeeting = false, canNotify = false }: Props) {
+export function SetupView({ store, loadInvite, inMeeting = false }: Props) {
   const saved = useSession(store);
   const [text, setText] = useState(() => itemsToText(saved.items));
   const [total, setTotal] = useState(saved.totalMinutes);
@@ -127,7 +125,19 @@ export function SetupView({ store, loadInvite, inMeeting = false, canNotify = fa
             {plan.items.map((item, i) => (
               <tr key={item.id}>
                 <td>{i + 1}</td>
-                <td>{item.title}</td>
+                <td>
+                  <input
+                    key={`${item.id}:${item.title}`}
+                    className="title-input"
+                    aria-label={`Name of item ${i + 1}`}
+                    defaultValue={item.title}
+                    onBlur={(e) => {
+                      if (!e.target.value.trim()) e.target.value = item.title; // a name can't be empty
+                      else if (e.target.value !== item.title) edit(setTitleInText(text, i, e.target.value));
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                  />
+                </td>
                 <td>
                   <input
                     aria-label={`Minutes for ${item.title}`}
@@ -158,9 +168,6 @@ export function SetupView({ store, loadInvite, inMeeting = false, canNotify = fa
         </table>
       )}
 
-      {plan.items.some((item) => item.participants?.length) && !canNotify && (
-        <p className="muted">Participants are saved, but nobody will be tagged in the meeting chat until sign-in is set up (see the README).</p>
-      )}
       {plan.overByMinutes > 0 && (
         <p className="error" role="alert">The plan is {plan.overByMinutes} min over the meeting length. Shorten an item or extend the meeting.</p>
       )}

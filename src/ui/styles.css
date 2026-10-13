@@ -84,3 +84,4 @@ button.seg-button:focus-visible { outline: 2px solid var(--brand); outline-offse
 
 .who { color: var(--muted); font-weight: 400; }
 .who-input { width: 100%; min-width: 120px; }
+.title-input { width: 100%; min-width: 100px; }

@@ -3,8 +3,6 @@ import { app, meeting } from "@microsoft/teams-js";
 export interface TeamsEnv {
   frameContext?: string;
   theme: string;
-  /** Id of the meeting's chat (used to post messages to it). */
-  chatId?: string;
 }
 
 export interface MeetingInfo {
@@ -19,7 +17,7 @@ export async function initTeams(timeoutMs = 5000): Promise<TeamsEnv | null> {
       new Promise((_resolve, reject) => setTimeout(() => reject(new Error("Teams did not respond")), timeoutMs)),
     ]);
     const context = await app.getContext();
-    return { frameContext: context.page?.frameContext, theme: context.app.theme, chatId: context.chat?.id };
+    return { frameContext: context.page?.frameContext, theme: context.app.theme };
   } catch {
     return null;
   }

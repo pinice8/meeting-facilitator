@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { itemsToText, setMinutesInText, setParticipantsInText } from "./agendaText";
+import { itemsToText, setMinutesInText, setParticipantsInText, setTitleInText } from "./agendaText";
 
 describe("agendaText", () => {
   it("serializes saved items as 'Title - minutes' lines", () => {
@@ -33,5 +33,15 @@ describe("agendaText", () => {
     expect(setParticipantsInText("A | Old", 0, "New")).toBe("A | New");
     expect(setParticipantsInText("A - 3 | Old", 0, "  ")).toBe("A - 3");
     expect(setParticipantsInText("A", 4, "X")).toBe("A");
+  });
+
+  it("renames one item and keeps its minutes and participants", () => {
+    expect(setTitleInText("A - 5 | Alice\nB", 0, "Alpha")).toBe("Alpha - 5 | Alice\nB");
+  });
+
+  it("ignores an empty name or a bad index, and turns a pipe in the name into a slash", () => {
+    expect(setTitleInText("A\nB", 1, "   ")).toBe("A\nB");
+    expect(setTitleInText("A", 3, "X")).toBe("A");
+    expect(setTitleInText("A", 0, "Q3 | Q4")).toBe("Q3 / Q4");
   });
 });

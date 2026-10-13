@@ -3,7 +3,7 @@ import { useSession } from "../store/hooks";
 import { formatClock } from "../core/format";
 import { MINUTE_MS, resetSession } from "../core/timer";
 
-export function DoneView({ store }: { store: SessionStore }) {
+export function DoneView({ store, showControls = true }: { store: SessionStore; showControls?: boolean }) {
   const state = useSession(store);
   const rows = state.items.map((item, i) => {
     const actual = state.elapsedMs[i] ?? 0;
@@ -36,7 +36,7 @@ export function DoneView({ store }: { store: SessionStore }) {
           </tr>
         </tbody>
       </table>
-      {store.canControl && (
+      {showControls && store.canControl && (
         <div className="row">
           <button type="button" onClick={() => store.update((s) => resetSession(s))}>Back to setup</button>
         </div>

@@ -19,6 +19,9 @@ meeting is ahead or behind; organizers and presenters move between items.
   the app in the meeting".
 - **Top bar.** A bar pinned to the top shows the running item first, filling as its time passes
   (green → amber → red), then the upcoming items; widths follow the planned minutes.
+- **Meeting stage.** An organizer/presenter clicks **Show on stage** in the side panel; everyone then
+  sees a full-width read-only view (big bar across the top, huge countdown, what is next). Needs the
+  manifest's `meetingStage` context (v1.1.0+).
 - **During the meeting:** Previous / Pause / Next / Rebalance / End. Overrun goes red and counts
   up; it never auto-advances. *Rebalance* redistributes the remaining time across the remaining items.
 
@@ -77,6 +80,7 @@ Without this the button is hidden and you paste the agenda instead.
 - [ ] End the meeting, wait > 10 min, start it again: the agenda restarts from item 1.
 - [ ] A late joiner gets the current state.
 - [ ] Meeting side panel during the live meeting.
+- [ ] **Show on stage** puts the big view on the stage for everyone (needs the v1.1.0 package).
 - [ ] **Load from invite**: sign-in popup, event found, agenda and length filled in.
 
 ## Known limits

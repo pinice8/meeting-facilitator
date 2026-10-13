@@ -36,6 +36,29 @@ export function applyTheme(theme: string): void {
   document.documentElement.dataset.theme = theme;
 }
 
+/** Whether the local user may share the app to the meeting stage (needs the manifest's meetingStage context). */
+export function canShareToStage(): Promise<boolean> {
+  return new Promise((resolve) => {
+    try {
+      meeting.getAppContentStageSharingCapabilities((error, capabilities) =>
+        resolve(!error && Boolean(capabilities?.doesAppHaveSharePermission)),
+      );
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+/** Shares the given page to the meeting stage, where everyone in the meeting sees it. */
+export function shareToStage(contentUrl: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    meeting.shareAppContentToStage((error) => {
+      if (error) reject(new Error(typeof error === "object" && error.message ? error.message : "Teams refused to share the app"));
+      else resolve();
+    }, contentUrl);
+  });
+}
+
 /** Details of the meeting the app is open in (used to find the calendar invite). */
 export async function getMeetingInfo(): Promise<MeetingInfo | null> {
   try {

@@ -5,7 +5,7 @@ import "./ui/styles.css";
 import { MemoryStore } from "./store/MemoryStore";
 import type { SessionStore } from "./store/SessionStore";
 import { connectLiveShare } from "./store/LiveShareStore";
-import { applyTheme, getMeetingInfo, initTeams, markLoaded, watchTheme } from "./teams";
+import { applyTheme, canShareToStage, getMeetingInfo, initTeams, markLoaded, shareToStage, watchTheme } from "./teams";
 import { getGraphToken, isGraphConfigured } from "./graph/auth";
 import { fetchInvite } from "./graph/invite";
 import { extractAgendaFromInvite } from "./core/invite";
@@ -15,15 +15,22 @@ import { parseAgenda } from "./core/parser";
 import { planAgenda } from "./core/planner";
 
 const root = createRoot(document.getElementById("root") as HTMLElement);
-const render = (store: SessionStore, loadInvite?: InviteLoader, inMeeting = false) =>
-  root.render(<StrictMode><App store={store} loadInvite={loadInvite} inMeeting={inMeeting} /></StrictMode>);
+interface RenderOptions {
+  loadInvite?: InviteLoader;
+  inMeeting?: boolean;
+  view?: "panel" | "stage";
+  onShareToStage?: () => Promise<void>;
+}
+const render = (store: SessionStore, options: RenderOptions = {}) =>
+  root.render(<StrictMode><App store={store} {...options} /></StrictMode>);
 
 const message = (text: string) => root.render(<main className="app"><p>{text}</p></main>);
 
 /**
  * Local try-out outside Teams: ?harness=1 [&role=attendee] [&speed=60] [&meeting=1]
- * [&agenda=Intro - 2|Demo|Q&A - 1] [&total=6]
- * speed N makes time run N times faster; meeting=1 behaves like the in-meeting panel (auto-start).
+ * [&agenda=Intro - 2|Demo|Q&A - 1] [&total=6] [&stage=1] [&share=1]
+ * speed N makes time run N times faster; meeting=1 behaves like the in-meeting panel (auto-start);
+ * stage=1 shows the meeting-stage view; share=1 shows the "Show on stage" button (does nothing).
  */
 function startHarness(params: URLSearchParams) {
   const speed = Number(params.get("speed")) || 1;
@@ -40,8 +47,11 @@ function startHarness(params: URLSearchParams) {
       notice: "Local harness: nothing is shared.",
       initial,
     }),
-    undefined,
-    params.get("meeting") === "1",
+    {
+      inMeeting: params.get("meeting") === "1" || params.get("stage") === "1",
+      view: params.get("stage") === "1" ? "stage" : "panel",
+      onShareToStage: params.get("share") === "1" ? () => Promise.resolve() : undefined,
+    },
   );
 }
 
@@ -72,7 +82,14 @@ async function start() {
     const reason = error instanceof Error ? error.message : String(error);
     store = new MemoryStore({ notice: `Couldn’t connect to the shared meeting session (${reason}). Showing a local-only timer.` });
   }
-  render(store, isGraphConfigured() ? inviteLoader : undefined, MEETING_FRAMES.includes(teams.frameContext ?? ""));
+  const stageUrl = new URL("index.html", window.location.href).href;
+  const mayShare = teams.frameContext === "sidePanel" && (await canShareToStage());
+  render(store, {
+    loadInvite: isGraphConfigured() ? inviteLoader : undefined,
+    inMeeting: MEETING_FRAMES.includes(teams.frameContext ?? ""),
+    view: teams.frameContext === "meetingStage" ? "stage" : "panel",
+    onShareToStage: mayShare ? () => shareToStage(stageUrl) : undefined,
+  });
   markLoaded();
 }
 

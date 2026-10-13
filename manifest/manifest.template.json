@@ -21,7 +21,7 @@
       "configurationUrl": "{{BASE_URL}}config.html",
       "canUpdateConfiguration": false,
       "scopes": ["groupChat"],
-      "context": ["meetingChatTab", "meetingDetailsTab", "meetingSidePanel"]
+      "context": ["meetingChatTab", "meetingDetailsTab", "meetingSidePanel", "meetingStage"]
     }
   ],
   "permissions": ["identity"],

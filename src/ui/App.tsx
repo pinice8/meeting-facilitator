@@ -6,15 +6,20 @@ import { SetupView, type InviteLoader } from "./SetupView";
 import { RunningView } from "./RunningView";
 import { DoneView } from "./DoneView";
 import { AgendaBar } from "./AgendaBar";
+import { StageView } from "./StageView";
 
 interface Props {
   store: SessionStore;
   loadInvite?: InviteLoader;
   /** Open inside the live meeting (side panel / stage) rather than the pre-meeting chat tab. */
   inMeeting?: boolean;
+  /** "stage" is the full-width read-only view shown on the meeting stage. */
+  view?: "panel" | "stage";
+  /** Present only when the local user may share the app to the meeting stage. */
+  onShareToStage?: () => Promise<void>;
 }
 
-export function App({ store, loadInvite, inMeeting = false }: Props) {
+export function App({ store, loadInvite, inMeeting = false, view = "panel", onShareToStage }: Props) {
   const session = useSession(store);
 
   // A facilitator opening the app in the meeting starts the saved agenda (or restarts it if the
@@ -35,6 +40,8 @@ export function App({ store, loadInvite, inMeeting = false }: Props) {
 
   const live = session.status === "running" || session.status === "paused";
 
+  if (view === "stage") return <StageView store={store} />;
+
   return (
     <>
       {live && <AgendaBar store={store} />}
@@ -47,7 +54,7 @@ export function App({ store, loadInvite, inMeeting = false }: Props) {
         </header>
         {store.notice && <p className="notice" role="status">{store.notice}</p>}
         {session.status === "setup" && <SetupView store={store} loadInvite={loadInvite} inMeeting={inMeeting} />}
-        {live && <RunningView store={store} />}
+        {live && <RunningView store={store} onShareToStage={onShareToStage} />}
         {session.status === "done" && <DoneView store={store} />}
       </main>
     </>

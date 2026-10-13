@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { SessionStore } from "../store/SessionStore";
 import { useNow, useSession } from "../store/hooks";
 import { formatClock, formatDelta } from "../core/format";
@@ -15,8 +16,9 @@ import {
   totalElapsedMs,
 } from "../core/timer";
 
-export function RunningView({ store }: { store: SessionStore }) {
+export function RunningView({ store, onShareToStage }: { store: SessionStore; onShareToStage?: () => Promise<void> }) {
   const state = useSession(store);
+  const [shareMessage, setShareMessage] = useState<string>();
   const now = useNow(store);
   const item = state.items[state.currentIndex];
   if (!item) return null;
@@ -50,6 +52,23 @@ export function RunningView({ store }: { store: SessionStore }) {
           <button type="button" className="primary" onClick={() => store.update(nextItem)}>{isLast ? "Finish" : "Next"}</button>
           <button type="button" onClick={() => store.update(rebalance)} disabled={isLast} title="Redistribute the remaining time across the remaining items">Rebalance</button>
           <button type="button" onClick={() => store.update(finishSession)}>End meeting</button>
+        </div>
+      )}
+      {onShareToStage && (
+        <div className="row">
+          <button
+            type="button"
+            onClick={() => {
+              setShareMessage(undefined);
+              onShareToStage().then(
+                () => setShareMessage("Showing on the meeting stage for everyone."),
+                (e: Error) => setShareMessage(`Couldn’t share to the stage: ${e.message}`),
+              );
+            }}
+          >
+            Show on stage
+          </button>
+          {shareMessage && <span className="muted" role="status">{shareMessage}</span>}
         </div>
       )}
 

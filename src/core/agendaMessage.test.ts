@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agendaToHtml, agendaToText, buildFlowPayload } from "./agendaMessage";
+import { agendaToCard, agendaToHtml, agendaToText, buildFlowPayload } from "./agendaMessage";
 
 const items = [
   { id: "item-1", title: "Intro", minutes: 5, participants: ["Alice"] },
@@ -30,5 +30,18 @@ describe("agenda message", () => {
 
   it("defaults the chat id to an empty string", () => {
     expect(buildFlowPayload(items, 30).chatId).toBe("");
+  });
+
+  it("is a Teams message with an adaptive card, so the webhook trigger accepts it", () => {
+    const payload = buildFlowPayload(items, 30, "c1");
+    expect(payload.type).toBe("message");
+    expect(payload.attachments).toHaveLength(1);
+    expect(payload.attachments[0].contentType).toBe("application/vnd.microsoft.card.adaptive");
+    expect(payload.attachments[0].content.type).toBe("AdaptiveCard");
+  });
+
+  it("puts the heading and one text block per item in the card", () => {
+    const card = agendaToCard(items, 30);
+    expect(card.body.map((block) => block.text)).toEqual(["📋 Agenda — 30 min", "1. Intro (5 min) — Alice", "2. Demo & <Q&A> (25 min)"]);
   });
 });

@@ -23,6 +23,16 @@ export async function postAgendaToFlow(url: string, payload: FlowPayload, fetchF
   } catch {
     return "unconfirmed";
   }
-  if (!response.ok) throw new Error(`The flow answered ${response.status}`);
+  if (!response.ok) throw new Error(`The flow answered ${response.status}${await explanation(response)}`);
   return "confirmed";
+}
+
+/** The flow's own explanation of a rejection (trimmed), so "400" is never a mystery. */
+async function explanation(response: Response): Promise<string> {
+  try {
+    const text = (await response.text()).replace(/\s+/g, " ").trim();
+    return text ? `: ${text.length > 300 ? `${text.slice(0, 300)}…` : text}` : "";
+  } catch {
+    return "";
+  }
 }

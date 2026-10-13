@@ -18,8 +18,26 @@ export function agendaToHtml(items: AgendaItem[], totalMinutes: number): string 
   return [`<b>${escapeHtml(headingFor(totalMinutes))}</b>`, ...items.map((item, i) => escapeHtml(lineFor(item, i)))].join("<br>");
 }
 
-/** What the Power Automate flow receives: ready-made message text plus the raw data. */
+/** The agenda as an Adaptive Card, the body shape the Teams webhook trigger expects. */
+export function agendaToCard(items: AgendaItem[], totalMinutes: number) {
+  return {
+    $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+    type: "AdaptiveCard" as const,
+    version: "1.4",
+    body: [
+      { type: "TextBlock" as const, text: headingFor(totalMinutes), weight: "Bolder", size: "Medium", wrap: true },
+      ...items.map((item, i) => ({ type: "TextBlock" as const, text: lineFor(item, i), wrap: true })),
+    ],
+  };
+}
+
+/**
+ * What the Power Automate flow receives. It is a Teams "message with an adaptive card" (so the Teams
+ * webhook trigger accepts it as is) plus our own fields: ready-made message text and the raw data.
+ */
 export interface FlowPayload {
+  type: "message";
+  attachments: Array<{ contentType: string; contentUrl: null; content: ReturnType<typeof agendaToCard> }>;
   chatId: string;
   /** HTML message to post. */
   message: string;
@@ -31,6 +49,8 @@ export interface FlowPayload {
 
 export function buildFlowPayload(items: AgendaItem[], totalMinutes: number, chatId = ""): FlowPayload {
   return {
+    type: "message",
+    attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", contentUrl: null, content: agendaToCard(items, totalMinutes) }],
     chatId,
     message: agendaToHtml(items, totalMinutes),
     text: agendaToText(items, totalMinutes),

@@ -34,8 +34,13 @@ describe("postAgendaToFlow", () => {
     expect(await postAgendaToFlow("https://flow/x", payload, fetchFn)).toBe("unconfirmed");
   });
 
-  it("throws when the flow answers with an error", async () => {
-    const fetchFn = vi.fn().mockResolvedValue(new Response("nope", { status: 401 }));
-    await expect(postAgendaToFlow("https://flow/x", payload, fetchFn)).rejects.toThrow(/401/);
+  it("throws when the flow answers with an error, including its explanation", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response('{"error":{"message":"Body schema mismatch"}}', { status: 400 }));
+    await expect(postAgendaToFlow("https://flow/x", payload, fetchFn)).rejects.toThrow(/400.*Body schema mismatch/);
+  });
+
+  it("trims a very long explanation", async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response("x".repeat(1000), { status: 500 }));
+    await expect(postAgendaToFlow("https://flow/x", payload, fetchFn)).rejects.toThrow(/^The flow answered 500: x{300}…$/);
   });
 });

@@ -101,7 +101,10 @@ Do this once, in https://make.powerautomate.com:
    - *Message*: the expression `outputs('Payload')?['message']`.
 5. Save the flow, copy the **HTTP POST URL** from the trigger, and paste it into the app (*Share the agenda in the meeting chat → Flow URL*). Tick the checkbox to post on every save.
 
-The app sends `{ chatId, message (HTML), text, totalMinutes, items[] }` as text/plain (no CORS preflight).
+The app sends a Teams "message with an adaptive card" (`type`, `attachments[]`, which is what the Teams
+webhook trigger validates) plus our own fields `chatId`, `message` (HTML), `text`, `totalMinutes` and
+`items[]`, as text/plain (no CORS preflight). If the flow rejects it, the app shows the flow's own
+explanation next to the HTTP status.
 This trigger does not answer in a way the browser can read, so the app says "sent, it didn't confirm";
 check the chat, and the flow's **Run history** in Power Automate shows what happened (and any error).
 The footer's "chat id ok/missing" tells you whether Teams gave the app the meeting chat's id.
